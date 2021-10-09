@@ -97,6 +97,29 @@ impl PointData {
                 .join("\n")
         )
     }
+
+    pub fn from_csv<R:std::io::Read>(reader: &mut R) -> Result<Self>{
+        let mut csv_reader = csv::ReaderBuilder::new().from_reader(reader);
+
+        let mut point_data = Self::new();
+        let mut records = Vec::new();
+        for record in csv_reader.records(){
+            records.push(record?);
+        }
+
+        for (i, column) in csv_reader.headers()?.iter().enumerate(){
+            let mut data = records.iter().flat_map(|r| r[i].parse::<f64>()).collect::<Vec<f64>>();
+            point_data.headers.push(column.to_owned());
+            if data.len()==records.len(){
+                point_data.data.insert(column.to_owned(), data);
+            }
+            else{
+                point_data.aux.insert(column.to_owned(), records.iter().map(|r| r[i].to_owned()).collect::<Vec<_>>());
+            }
+            point_data.length=records.len();
+        }
+        Ok(point_data)
+    }
 }
 
 pub fn test_point_data() -> Result<PointData> {

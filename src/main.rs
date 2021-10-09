@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 use std::convert::TryInto;
+use anyhow::Result;
 
 use std::fs::File;
 use std::io::{Write, BufWriter};
@@ -12,14 +13,19 @@ use mesh::*;
 
 
 #[macroquad::main("cloudviewer")]
-async fn main() {
+async fn main() -> Result<()> {
 //    let mut bytes: Vec<u8> = Vec::new();
-    let point_data = test_point_data_circle(1000).unwrap();
+//    let point_data = test_point_data_circle(1000).unwrap();
+    let mut csv_content = load_file("test_point_data1.csv").await?;
+    let mut point_data = PointData::from_csv(&mut csv_content.as_slice())?;
+    println!("{}",point_data.to_csv_simple());
 
-    let mut file = std::fs::File::create("test_point_data.csv").unwrap();
-    let mut writer = BufWriter::new(&file);
-
-    write!(writer, "{}", point_data.to_csv_simple());
+    {
+        let mut file = std::fs::File::create("test_point_data.csv").unwrap();
+        let mut writer = BufWriter::new(&file);   
+        write!(writer, "{}", point_data.to_csv_simple());
+        writer.flush();
+    }
 
     let mut parameters = Parameters::new();
     let mut mesh = parameters.new_mesh();
