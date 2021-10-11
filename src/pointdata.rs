@@ -1,5 +1,6 @@
+#![allow(dead_code)]
+
 use std::collections::HashMap;
-use std::convert::TryInto;
 use anyhow::Result;
 use csv;
 use std::f64::consts::PI;
@@ -35,16 +36,16 @@ impl PointData {
     }
     pub fn allocate(&mut self, n: usize) -> &mut Self {
         self.length = n;
-        for (key, value) in self.data.iter_mut() {
+        for (_, value) in self.data.iter_mut() {
             value.resize(n, 0.0);
         }
-        for (key, value) in self.aux.iter_mut() {
+        for (_, value) in self.aux.iter_mut() {
             value.resize(n, "".to_string());
         }
         self
     }
     pub fn set_data(&mut self, column: &str, index: usize, value: f64) -> &mut Self {
-        if (index >= self.length) {
+        if index >= self.length {
             self.allocate(index);
         }
         if let Some(v) = self.data.get_mut(column) {
@@ -58,7 +59,7 @@ impl PointData {
         self
     }
     pub fn set_aux(&mut self, column: &str, index: usize, value: String) -> &mut Self {
-        if (index >= self.length) {
+        if index >= self.length {
             self.allocate(index);
         }
         if let Some(v) = self.aux.get_mut(column) {
@@ -73,7 +74,7 @@ impl PointData {
     }
     pub fn row(&self, index: usize) -> Vec<String> {
         let mut v = Vec::with_capacity(self.headers.len());
-        if (index < self.length) {
+        if index < self.length {
             for column in self.headers.iter() {
                 if let Some(column_data) = self.data.get(column) {
                     v.push(format!("{}", column_data[index]));
@@ -108,7 +109,7 @@ impl PointData {
         }
 
         for (i, column) in csv_reader.headers()?.iter().enumerate(){
-            let mut data = records.iter().flat_map(|r| r[i].parse::<f64>()).collect::<Vec<f64>>();
+            let data = records.iter().flat_map(|r| r[i].parse::<f64>()).collect::<Vec<f64>>();
             point_data.headers.push(column.to_owned());
             if data.len()==records.len(){
                 point_data.data.insert(column.to_owned(), data);
@@ -119,6 +120,14 @@ impl PointData {
             point_data.length=records.len();
         }
         Ok(point_data)
+    }
+
+    pub fn points<'a>(&'a self, x_column:&'a str, y_column:&'a str)-> Box<dyn Iterator<Item = (f64,f64,usize)> + 'a>{
+        Box::new(
+            self.data[x_column].iter().zip(self.data[y_column].iter()).enumerate().map(
+                |(i,(x,y))| (*x,*y,i)
+            )
+        )
     }
 }
 

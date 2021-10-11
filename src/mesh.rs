@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[derive(Debug, Clone)]
 pub struct Parameters {
     pub xcolumn: String,
@@ -71,6 +73,7 @@ pub struct Mesh {
     pub ymin: f64,
     pub ymax: f64,
     pub mesh: Vec<f64>,
+    pub processed_mesh: Vec<f64>,
     pub rgba8: Vec<u8>,
 }
 
@@ -84,6 +87,7 @@ impl Mesh {
             ymin: 0.0,
             ymax: 1.0,
             mesh: Vec::new(),
+            processed_mesh: Vec::new(),
             rgba8: Vec::new(),
         }
     }
@@ -92,6 +96,7 @@ impl Mesh {
     pub fn resize(&mut self, width: usize, height: usize) -> &mut Self {
         let size = width * height;
         self.mesh.resize(size, 0.0);
+        self.processed_mesh.resize(size, 0.0);
         self.rgba8.resize(4*size, 0);
         self.width = width;
         self.height = height;
@@ -119,8 +124,14 @@ impl Mesh {
 
     }
 
+    pub fn to_processed_mesh(&mut self){
+        for i in 0..self.mesh.len(){
+            self.processed_mesh[i]=self.mesh[i];
+        }
+    }
+
     pub fn to_rgba8_gray(&mut self){
-        for (i,m) in self.mesh.iter().enumerate() {
+        for (i,m) in self.processed_mesh.iter().enumerate() {
             let value:u8 = if *m<0.0 {0} else {if *m>=1.0 {255} else {(255.0*m) as u8} };
             self.rgba8[4*i]= value;
             self.rgba8[4*i+1]= value;
@@ -130,11 +141,19 @@ impl Mesh {
     }
 
     pub fn plain_points(&mut self, vx:&Vec<f64>, vy:&Vec<f64>){
+        for (&x,&y) in vx.iter().zip(vy.iter()) {
+//            println!("{}: {} {}",i,x,y);
+            self.point(x, y, 1.0);
+        }
+    }
+/*
+    pub fn add_points(&mut self, vx:&Vec<f64>, vy:&Vec<f64>){
         for (i,(&x,&y)) in vx.iter().zip(vy.iter()).enumerate() {
 //            println!("{}: {} {}",i,x,y);
             self.point(x, y, 1.0);
         }
     }
+*/  
     pub fn test_pattern(&mut self){
         for y in 0..self.height {
             for x in 0..self.width {

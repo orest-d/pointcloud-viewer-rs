@@ -1,8 +1,8 @@
+#![allow(dead_code)]
 use macroquad::prelude::*;
 use std::convert::TryInto;
 use anyhow::Result;
 
-use std::fs::File;
 use std::io::{Write, BufWriter};
 
 mod pointdata;
@@ -16,15 +16,15 @@ use mesh::*;
 async fn main() -> Result<()> {
 //    let mut bytes: Vec<u8> = Vec::new();
 //    let point_data = test_point_data_circle(1000).unwrap();
-    let mut csv_content = load_file("test_point_data1.csv").await?;
-    let mut point_data = PointData::from_csv(&mut csv_content.as_slice())?;
+    let csv_content = load_file("test_point_data1.csv").await?;
+    let point_data = PointData::from_csv(&mut csv_content.as_slice())?;
     println!("{}",point_data.to_csv_simple());
 
     {
-        let mut file = std::fs::File::create("test_point_data.csv").unwrap();
+        let file = std::fs::File::create("test_point_data.csv").unwrap();
         let mut writer = BufWriter::new(&file);   
-        write!(writer, "{}", point_data.to_csv_simple());
-        writer.flush();
+        write!(writer, "{}", point_data.to_csv_simple()).unwrap();
+        writer.flush().unwrap();
     }
 
     let mut parameters = Parameters::new();
@@ -63,6 +63,7 @@ async fn main() -> Result<()> {
         if point_data.data.contains_key(&parameters.xcolumn) & point_data.data.contains_key(&parameters.ycolumn){
             mesh.plain_points(vxy.0,vxy.1);
         }
+        mesh.to_processed_mesh();
         mesh.to_rgba8_gray();
 //        mesh.test_pattern();
         let texture = Texture2D::from_rgba8(mesh.width.try_into().unwrap(), mesh.height.try_into().unwrap(), &mesh.rgba8);
