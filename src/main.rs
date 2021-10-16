@@ -12,21 +12,22 @@ use mesh::*;
 
 
 
-#[macroquad::main("cloudviewer")]
+#[macroquad::main("pointcloud viewer")]
 async fn main() -> Result<()> {
 //    let mut bytes: Vec<u8> = Vec::new();
 //    let point_data = test_point_data_circle(1000).unwrap();
-    let csv_content = load_file("test_point_data1.csv").await?;
+    let csv_content = load_file("data.csv").await?;
     let point_data = PointData::from_csv(&mut csv_content.as_slice())?;
     println!("{}",point_data.to_csv_simple());
 
+    /*
     {
         let file = std::fs::File::create("test_point_data.csv").unwrap();
         let mut writer = BufWriter::new(&file);   
         write!(writer, "{}", point_data.to_csv_simple()).unwrap();
         writer.flush().unwrap();
     }
-
+*/
     let mut parameters = Parameters::new();
     let mut mesh = parameters.new_mesh();
     let dummy_vxy = (&Vec::new(),&Vec::new());
