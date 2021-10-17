@@ -5,11 +5,14 @@ use anyhow::Result;
 
 use std::io::{Write, BufWriter};
 
+
 mod pointdata;
 mod mesh;
+mod pipeline;
+
 use pointdata::*;
 use mesh::*;
-
+use pipeline::*;
 
 
 #[macroquad::main("pointcloud viewer")]
