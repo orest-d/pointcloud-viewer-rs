@@ -17,8 +17,8 @@ impl Parameters {
         Parameters {
             xcolumn: "".into(),
             ycolumn: "".into(),
-            mesh_width: 1000,
-            mesh_height: 1000,
+            mesh_width: 800,
+            mesh_height: 800,
             xmin: 0.0,
             xmax: 1.0,
             ymin: 0.0,

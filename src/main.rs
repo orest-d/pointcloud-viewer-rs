@@ -14,17 +14,27 @@ use pointdata::*;
 use mesh::*;
 use pipeline::*;
 
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "pointcloud viewer".to_owned(),
+        fullscreen: false,
+        window_resizable: true,
+        window_width: 1200,
+        window_height: 820,
+        ..Default::default()
+    }
+}
 
-#[macroquad::main("pointcloud viewer")]
+#[macroquad::main(window_conf)]
 async fn main() -> Result<()> {
     let mut pipeline = Pipeline::new();
     pipeline.load("data.csv").await?;
     println!("{}",pipeline.point_data.to_csv_simple());
     
     loop {
-        clear_background(WHITE);
+        clear_background(DARKBLUE);
         egui_macroquad::ui(|egui_ctx| {
-            egui::Window::new("Cloud viewer").show(egui_ctx, |ui| {
+            egui::Window::new("Cloud viewer").default_pos((900.0,10.0)).show(egui_ctx, |ui| {
                 //ui.label("Test");
                 if ui.button("Zoom all").clicked(){
                     pipeline.zoom_all();
@@ -59,7 +69,7 @@ async fn main() -> Result<()> {
         });
         pipeline.run();
         if let Some(texture) = pipeline.texture{
-            draw_texture(texture, 0.0, 0.0, Color::from_rgba(255, 255, 255, 255));
+            draw_texture(texture, 10.0, 10.0, Color::from_rgba(255, 255, 255, 255));
         }
         egui_macroquad::draw();
         // Draw things after egui
