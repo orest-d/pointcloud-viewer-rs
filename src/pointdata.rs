@@ -122,12 +122,17 @@ impl PointData {
         Ok(point_data)
     }
 
-    pub fn points<'a>(&'a self, x_column:&'a str, y_column:&'a str)-> Box<dyn Iterator<Item = (f64,f64,usize)> + 'a>{
-        Box::new(
-            self.data[x_column].iter().zip(self.data[y_column].iter()).enumerate().map(
-                |(i,(x,y))| (*x,*y,i)
-            )
-        )
+    pub fn points<'a>(&'a self, x_column:&'a str, y_column:&'a str)-> Option<Box<dyn Iterator<Item = (f64,f64,usize)> + 'a>>{
+        if self.data.contains_key(x_column) && self.data.contains_key(y_column){
+            Some(Box::new(
+                self.data[x_column].iter().zip(self.data[y_column].iter()).enumerate().map(
+                    |(i,(x,y))| (*x,*y,i)
+                )
+            ))
+        }
+        else{
+            None
+        }
     }
 }
 

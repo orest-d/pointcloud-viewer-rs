@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 use std::convert::TryInto;
 use anyhow::Result;
 
-use std::io::{Write, BufWriter};
+//use std::io::{Write, BufWriter};
 
 
 mod pointdata;
@@ -17,6 +17,58 @@ use pipeline::*;
 
 #[macroquad::main("pointcloud viewer")]
 async fn main() -> Result<()> {
+    let mut pipeline = Pipeline::new();
+    pipeline.load("data.csv").await?;
+    println!("{}",pipeline.point_data.to_csv_simple());
+    
+    loop {
+        clear_background(WHITE);
+        egui_macroquad::ui(|egui_ctx| {
+            egui::Window::new("Cloud viewer").show(egui_ctx, |ui| {
+                //ui.label("Test");
+                if ui.button("Zoom all").clicked(){
+                    pipeline.zoom_all();
+                }
+                egui::ComboBox::from_label("X-column")
+                    .selected_text(pipeline.xcolumn())
+                    .show_ui(ui, |ui| {
+                        let mut xcolumn = pipeline.xcolumn().to_owned();
+                        for column in pipeline.data_columns.iter() {
+                            ui.selectable_value(
+                                &mut xcolumn,
+                                column.to_string(),
+                                column,
+                            );
+                        }
+                        pipeline.set_xcolumn(xcolumn);
+                    });
+                egui::ComboBox::from_label("Y-column")
+                    .selected_text(pipeline.ycolumn())
+                    .show_ui(ui, |ui| {
+                        let mut ycolumn = pipeline.ycolumn().to_owned();
+                        for column in pipeline.data_columns.iter() {
+                            ui.selectable_value(
+                                &mut ycolumn,
+                                column.to_string(),
+                                column,
+                            );
+                        }
+                        pipeline.set_ycolumn(ycolumn);
+                    });
+            });
+        });
+        pipeline.run();
+        if let Some(texture) = pipeline.texture{
+            draw_texture(texture, 0.0, 0.0, Color::from_rgba(255, 255, 255, 255));
+        }
+        egui_macroquad::draw();
+        // Draw things after egui
+
+        next_frame().await;
+    }
+}
+
+async fn main_old() -> Result<()> {
 //    let mut bytes: Vec<u8> = Vec::new();
 //    let point_data = test_point_data_circle(1000).unwrap();
     let csv_content = load_file("data.csv").await?;

@@ -146,14 +146,12 @@ impl Mesh {
             self.point(x, y, 1.0);
         }
     }
-/*
-    pub fn add_points(&mut self, vx:&Vec<f64>, vy:&Vec<f64>){
-        for (i,(&x,&y)) in vx.iter().zip(vy.iter()).enumerate() {
+    pub fn add_points(&mut self, xyi:&[(f64,f64,usize)]){
+        for (x,y,_) in xyi {
 //            println!("{}: {} {}",i,x,y);
-            self.point(x, y, 1.0);
+            self.point(*x, *y, 1.0);
         }
     }
-*/  
     pub fn test_pattern(&mut self){
         for y in 0..self.height {
             for x in 0..self.width {
