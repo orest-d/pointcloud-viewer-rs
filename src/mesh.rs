@@ -39,27 +39,27 @@ impl Parameters {
         mesh.ymin = self.ymin;
         mesh.ymax = self.ymax;
     }
-    pub fn zoom_all_x(&mut self, v:&Vec<f64>){
-        if v.len()>0{
+    pub fn zoom_all_x(&mut self, v: &Vec<f64>) {
+        if v.len() > 0 {
             self.xmin = v[0];
             self.xmax = v[0];
-            for value in v.iter(){
+            for value in v.iter() {
                 self.xmin = self.xmin.min(*value);
                 self.xmax = self.xmax.max(*value);
             }
         }
     }
-    pub fn zoom_all_y(&mut self, v:&Vec<f64>){
-        if v.len()>0{
+    pub fn zoom_all_y(&mut self, v: &Vec<f64>) {
+        if v.len() > 0 {
             self.ymin = v[0];
             self.ymax = v[0];
-            for value in v.iter(){
+            for value in v.iter() {
                 self.ymin = self.ymin.min(*value);
                 self.ymax = self.ymax.max(*value);
             }
         }
     }
-    pub fn zoom_all(&mut self, vx:&Vec<f64>, vy:&Vec<f64>){
+    pub fn zoom_all(&mut self, vx: &Vec<f64>, vy: &Vec<f64>) {
         self.zoom_all_x(vx);
         self.zoom_all_y(vy);
     }
@@ -92,12 +92,11 @@ impl Mesh {
         }
     }
 
-
     pub fn resize(&mut self, width: usize, height: usize) -> &mut Self {
         let size = width * height;
         self.mesh.resize(size, 0.0);
         self.processed_mesh.resize(size, 0.0);
-        self.rgba8.resize(4*size, 0);
+        self.rgba8.resize(4 * size, 0);
         self.width = width;
         self.height = height;
         self.clean()
@@ -110,56 +109,63 @@ impl Mesh {
         self
     }
 
-    pub fn point(&mut self, x: f64, y: f64, weight:f64){
-        let fx = (x-self.xmin)/(self.xmax-self.xmin);
-        let fy = (y-self.ymin)/(self.ymax-self.ymin);
-        if fx>=0.0 && fy>=0.0{
-            let ix = (fx*(self.width as f64)) as usize;
-            let iy = (fy*(self.height as f64)) as usize;
-            if ix<self.width && iy<self.height{
-//                println!("  -> mesh {} {}",ix,iy);
-                self.mesh[ix+iy*self.width]+=weight;
+    pub fn point(&mut self, x: f64, y: f64, weight: f64) {
+        let fx = (x - self.xmin) / (self.xmax - self.xmin);
+        let fy = (y - self.ymin) / (self.ymax - self.ymin);
+        if fx >= 0.0 && fy >= 0.0 {
+            let ix = (fx * (self.width as f64)) as usize;
+            let iy = (fy * (self.height as f64)) as usize;
+            if ix < self.width && iy < self.height {
+                //                println!("  -> mesh {} {}",ix,iy);
+                self.mesh[ix + iy * self.width] += weight;
             }
         }
-
     }
 
-    pub fn to_processed_mesh(&mut self){
-        for i in 0..self.mesh.len(){
-            self.processed_mesh[i]=self.mesh[i];
+    pub fn to_processed_mesh(&mut self) {
+        for i in 0..self.mesh.len() {
+            self.processed_mesh[i] = self.mesh[i];
         }
     }
 
-    pub fn to_rgba8_gray(&mut self){
-        for (i,m) in self.processed_mesh.iter().enumerate() {
-            let value:u8 = if *m<0.0 {0} else {if *m>=1.0 {255} else {(255.0*m) as u8} };
-            self.rgba8[4*i]= value;
-            self.rgba8[4*i+1]= value;
-            self.rgba8[4*i+2]= value;
-            self.rgba8[4*i+3]= 255;
+    pub fn to_rgba8_gray(&mut self) {
+        for (i, m) in self.processed_mesh.iter().enumerate() {
+            let value: u8 = if *m < 0.0 {
+                0
+            } else {
+                if *m >= 1.0 {
+                    255
+                } else {
+                    (255.0 * m) as u8
+                }
+            };
+            self.rgba8[4 * i] = value;
+            self.rgba8[4 * i + 1] = value;
+            self.rgba8[4 * i + 2] = value;
+            self.rgba8[4 * i + 3] = 255;
         }
     }
 
-    pub fn plain_points(&mut self, vx:&Vec<f64>, vy:&Vec<f64>){
-        for (&x,&y) in vx.iter().zip(vy.iter()) {
-//            println!("{}: {} {}",i,x,y);
+    pub fn plain_points(&mut self, vx: &Vec<f64>, vy: &Vec<f64>) {
+        for (&x, &y) in vx.iter().zip(vy.iter()) {
+            //            println!("{}: {} {}",i,x,y);
             self.point(x, y, 1.0);
         }
     }
-    pub fn add_points(&mut self, xyi:&[(f64,f64,usize)]){
-        for (x,y,_) in xyi {
-//            println!("{}: {} {}",i,x,y);
+    pub fn add_points(&mut self, xyi: &[(f64, f64, usize)]) {
+        for (x, y, _) in xyi {
+            //            println!("{}: {} {}",i,x,y);
             self.point(*x, *y, 1.0);
         }
     }
-    pub fn test_pattern(&mut self){
+    pub fn test_pattern(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let i=x+self.width*y; 
-                self.rgba8[4*i]= (x%256) as u8;
-                self.rgba8[4*i+1]= (y%256) as u8;
-                self.rgba8[4*i+2]= 0;
-                self.rgba8[4*i+3]= 255;
+                let i = x + self.width * y;
+                self.rgba8[4 * i] = (x % 256) as u8;
+                self.rgba8[4 * i + 1] = (y % 256) as u8;
+                self.rgba8[4 * i + 2] = 0;
+                self.rgba8[4 * i + 3] = 255;
             }
         }
     }
