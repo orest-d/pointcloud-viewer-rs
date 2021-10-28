@@ -57,6 +57,7 @@ def index():
     <li><a href="/liquer/q/hello">just hello</a></li>
     <li><a href="/liquer/q/harmonic">harmonic 100</a></li>
     <li><a href="/liquer/q/harmonic/plotly_chart-xy-x-y/xy.html">harmonic 100 plot</a></li>
+    <li><a href="/liquer/q/harmonic-100000/noise-0.1/pointcloud-viewer.html">noisy harmonic 100k</a></li>
     </ul>
     """
 
@@ -70,9 +71,21 @@ def harmonic(n=100):
             y=np.cos(a),
             x2=np.sin(2*a),
             y2=np.cos(2*a),
+            x3=np.sin(3*a),
+            y3=np.cos(3*a),
+            x4=np.sin(4*a),
+            y4=np.cos(4*a),
             label=[f"{i+1}/{n}" for i in range(n)]
         )
     )
+
+@command
+def noise(df, sigma=0.1):
+    columns = [c for c in df.columns if c.startswith("x") or c.startswith("y")]
+    for c in columns:
+        noise = np.random.normal(0.0,sigma,len(df))
+        df[c]+=noise
+    return df
 
 @command
 def pointcloud(state,name,context=None):

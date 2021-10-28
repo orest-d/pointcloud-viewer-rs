@@ -60,6 +60,9 @@ async fn main() -> Result<()> {
                             }
                             pipeline.set_ycolumn(ycolumn);
                         });
+                    let mut antialiased = pipeline.antialiased();
+                    ui.checkbox(&mut antialiased, "Antialiased");
+                    pipeline.set_antialiased(antialiased);
                 });
         });
         pipeline.run();
@@ -127,7 +130,7 @@ async fn main_old() -> Result<()> {
         if point_data.data.contains_key(&parameters.xcolumn)
             & point_data.data.contains_key(&parameters.ycolumn)
         {
-            mesh.plain_points(vxy.0, vxy.1);
+            mesh.plain_points(vxy.0, vxy.1, false);
         }
         mesh.to_processed_mesh();
         mesh.to_rgba8_gray();
