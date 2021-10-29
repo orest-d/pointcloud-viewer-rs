@@ -157,6 +157,37 @@ impl Mesh {
         }
         self
     }
+    pub fn get_index(&self, x:usize, y:usize)->Option<usize>{
+        if x<self.width && y<self.height{
+            let index = self.index_mesh[x+self.width*y];
+            if index==0{
+                None
+            }
+            else{
+                Some(index-1)
+            }
+        }
+        else{
+            None
+        }
+    }
+    pub fn get_index_wide(&self, x:usize, y:usize)->Option<usize>{
+        if let Some(index) = self.get_index(x, y){
+            Some(index)
+        }
+        else if let Some(index) = self.get_index(x+1, y){
+            Some(index)
+        }
+        else if let Some(index) = self.get_index(x, y+1){
+            Some(index)
+        }
+        else if let Some(index) = self.get_index(x+1, y+1){
+            Some(index)
+        }
+        else{
+            None
+        }
+    }
 
     pub fn point(&mut self, x: f64, y: f64, weight: f64, index: usize, highlight: bool) {
         let fx = (x - self.xmin) / (self.xmax - self.xmin);

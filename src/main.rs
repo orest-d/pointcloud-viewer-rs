@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
         clear_background(DARKBLUE);
         egui_macroquad::ui(|egui_ctx| {
             egui::Window::new("View setup")
-                .default_pos((900.0, 10.0))
+                .default_pos((850.0, 10.0))
                 .show(egui_ctx, |ui| {
                     //ui.label("Test");
                     if ui.button("Zoom all").clicked() {
@@ -108,7 +108,34 @@ async fn main() -> Result<()> {
                     let mut density_multiplier = pipeline.density_multiplier();
                     ui.add(egui::Slider::new(&mut density_multiplier, 0.0..=5.0));
                     pipeline.set_density_multiplier(density_multiplier);
+//                    dbg!(&ui.input().pointer.hover_pos());    
                 });
+            egui::Window::new("Data").default_pos((850.0, 370.0))
+            .show(egui_ctx, |ui| {
+                ui.label(format!("{:?}",ui.input().pointer.hover_pos()));
+                /*
+                if let Some(pos) = ui.input().pointer.hover_pos(){
+                    ui.label(format!("Index: {:?}",pipeline.mesh.get_index_wide((pos.x-10.0) as usize, (pos.y-10.0) as usize)));
+                }
+                */
+                if let Some(pos) = ui.input().pointer.hover_pos(){
+                    if let Some(index) = pipeline.mesh.get_index_wide((pos.x-10.0) as usize, (pos.y-10.0) as usize){
+                        ui.label(format!("Index: {}",index));
+                        egui::Grid::new("Data")
+                        .striped(true)
+                        .min_col_width(50.0)
+                        .max_col_width(200.0)
+                        .show(ui, |ui| {
+                            for column in pipeline.point_data.headers.iter() {
+                                ui.label(column);
+                                ui.label(pipeline.point_data.get(column, index));
+                                ui.end_row();
+                            }
+                        });
+                    }
+                }
+            });
+            
         });
         pipeline.run();
         if let Some(texture) = pipeline.texture {

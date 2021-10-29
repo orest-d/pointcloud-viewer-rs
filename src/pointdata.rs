@@ -72,6 +72,20 @@ impl PointData {
         }
         self
     }
+    pub fn get(&self, column: &str, index: usize) -> String{
+        if index>=self.length{
+            "".to_string()
+        }
+        else if self.data.contains_key(column){
+            format!("{}",self.data[column][index])
+        }
+        else if self.aux.contains_key(column){
+            self.aux[column][index].to_owned()
+        }
+        else{
+            "".to_string()
+        }
+    }
     pub fn row(&self, index: usize) -> Vec<String> {
         let mut v = Vec::with_capacity(self.headers.len());
         if index < self.length {
