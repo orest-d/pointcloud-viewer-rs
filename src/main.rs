@@ -8,6 +8,7 @@ mod measures;
 mod mesh;
 mod pipeline;
 mod pointdata;
+mod transform;
 
 use pipeline::*;
 use mesh::HighlightType;
