@@ -64,6 +64,7 @@ def index():
 @first_command
 def harmonic(n=100):
     a = np.linspace(0,2*np.pi,n)
+    segment = np.array(a*10/(2*np.pi),dtype=int)
     return pd.DataFrame(
         dict(
             a=a,
@@ -75,6 +76,7 @@ def harmonic(n=100):
             y3=np.cos(3*a),
             x4=np.sin(4*a),
             y4=np.cos(4*a),
+            segment=segment,
             label=[f"{i+1}/{n}" for i in range(n)]
         )
     )

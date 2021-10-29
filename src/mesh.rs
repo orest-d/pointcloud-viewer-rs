@@ -4,13 +4,16 @@
 pub struct Parameters {
     pub xcolumn: String,
     pub ycolumn: String,
+    pub weight_column: String,
+    pub highlight_column: String,
+    pub highlight_value: String,
     pub mesh_width: usize,
     pub mesh_height: usize,
     pub xmin: f64,
     pub xmax: f64,
     pub ymin: f64,
     pub ymax: f64,
-    pub antialiased:bool,
+    pub gaussian_points:bool,
     pub point_sigma: f64,
     pub density_multiplier: f64,
 }
@@ -20,13 +23,16 @@ impl Parameters {
         Parameters {
             xcolumn: "".into(),
             ycolumn: "".into(),
+            weight_column: "".into(),
+            highlight_column: "".into(),
+            highlight_value: "".into(),
             mesh_width: 800,
             mesh_height: 800,
             xmin: 0.0,
             xmax: 1.0,
             ymin: 0.0,
             ymax: 1.0,
-            antialiased: false,
+            gaussian_points: false,
             point_sigma:1.0,
             density_multiplier:1.0,
         }
@@ -54,6 +60,9 @@ impl Parameters {
                 self.xmax = self.xmax.max(*value);
             }
         }
+        let delta = (self.xmax-self.xmin)*3.0/(self.mesh_width as f64);
+        self.xmin-=delta;
+        self.xmax+=delta;
     }
     pub fn zoom_all_y(&mut self, v: &Vec<f64>) {
         if v.len() > 0 {
@@ -64,6 +73,9 @@ impl Parameters {
                 self.ymax = self.ymax.max(*value);
             }
         }
+        let delta = (self.ymax-self.ymin)*3.0/(self.mesh_height as f64);
+        self.ymin-=delta;
+        self.ymax+=delta;
     }
     pub fn zoom_all(&mut self, vx: &Vec<f64>, vy: &Vec<f64>) {
         self.zoom_all_x(vx);
@@ -79,7 +91,10 @@ pub struct Mesh {
     pub ymin: f64,
     pub ymax: f64,
     pub mesh: Vec<f64>,
+    pub highlight_mesh: Vec<f64>,
+    pub index_mesh: Vec<usize>,
     pub processed_mesh: Vec<f64>,
+    pub processed_highlight_mesh: Vec<f64>,
     pub rgba8: Vec<u8>,
 }
 
@@ -93,7 +108,10 @@ impl Mesh {
             ymin: 0.0,
             ymax: 1.0,
             mesh: Vec::new(),
+            highlight_mesh: Vec::new(),
+            index_mesh: Vec::new(),
             processed_mesh: Vec::new(),
+            processed_highlight_mesh: Vec::new(),
             rgba8: Vec::new(),
         }
     }
@@ -101,7 +119,10 @@ impl Mesh {
     pub fn resize(&mut self, width: usize, height: usize) -> &mut Self {
         let size = width * height;
         self.mesh.resize(size, 0.0);
+        self.highlight_mesh.resize(size, 0.0);
+        self.index_mesh.resize(size, 0);
         self.processed_mesh.resize(size, 0.0);
+        self.processed_highlight_mesh.resize(size, 0.0);
         self.rgba8.resize(4 * size, 0);
         self.width = width;
         self.height = height;
@@ -112,10 +133,22 @@ impl Mesh {
         for i in self.mesh.iter_mut() {
             *i = 0.0;
         }
+        for i in self.highlight_mesh.iter_mut() {
+            *i = 0.0;
+        }
+        for i in self.index_mesh.iter_mut() {
+            *i = 0;
+        }
+        for i in self.processed_mesh.iter_mut() {
+            *i = 0.0;
+        }
+        for i in self.processed_highlight_mesh.iter_mut() {
+            *i = 0.0;
+        }
         self
     }
 
-    pub fn point(&mut self, x: f64, y: f64, weight: f64) {
+    pub fn point(&mut self, x: f64, y: f64, weight: f64, index:usize, highlight:bool) {
         let fx = (x - self.xmin) / (self.xmax - self.xmin);
         let fy = (y - self.ymin) / (self.ymax - self.ymin);
         if fx >= 0.0 && fy >= 0.0 {
@@ -123,12 +156,18 @@ impl Mesh {
             let iy = (fy * (self.height as f64)) as usize;
             if ix < self.width && iy < self.height {
                 //                println!("  -> mesh {} {}",ix,iy);
-                self.mesh[ix + iy * self.width] += weight;
+                if highlight{
+                    self.highlight_mesh[ix + iy * self.width] += weight;
+                }
+                else{
+                    self.mesh[ix + iy * self.width] += weight;
+                }
+                self.index_mesh[ix + iy * self.width] = index;
             }
         }
     }
 
-    pub fn point_antialiased(&mut self, x: f64, y: f64, weight: f64) {
+    pub fn point_antialiased(&mut self, x: f64, y: f64, weight: f64, index:usize, highlight: bool) {
         let fx = (x - self.xmin) / (self.xmax - self.xmin);
         let fy = (y - self.ymin) / (self.ymax - self.ymin);
         if fx >= 0.0 && fy >= 0.0 {
@@ -162,22 +201,38 @@ impl Mesh {
                 w21*=w;
                 w22*=w;
 
-                self.mesh[ix-1 + (iy-1) * self.width] += w00;
-                self.mesh[ix + (iy-1) * self.width] += w10;
-                self.mesh[ix+1 + (iy-1) * self.width] += w20;
-
-                self.mesh[ix-1 + iy * self.width] += w01;
-                self.mesh[ix + iy * self.width] += w11;
-                self.mesh[ix+1 + iy * self.width] += w21;
-
-                self.mesh[ix-1 + (iy+1) * self.width] += w02;
-                self.mesh[ix + (iy+1) * self.width] += w12;
-                self.mesh[ix+1 + (iy+1) * self.width] += w22;
+                if highlight{
+                    self.highlight_mesh[ix-1 + (iy-1) * self.width] += w00;
+                    self.highlight_mesh[ix + (iy-1) * self.width] += w10;
+                    self.highlight_mesh[ix+1 + (iy-1) * self.width] += w20;
+                    
+                    self.highlight_mesh[ix-1 + iy * self.width] += w01;
+                    self.highlight_mesh[ix + iy * self.width] += w11;
+                    self.highlight_mesh[ix+1 + iy * self.width] += w21;
+                    
+                    self.highlight_mesh[ix-1 + (iy+1) * self.width] += w02;
+                    self.highlight_mesh[ix + (iy+1) * self.width] += w12;
+                    self.highlight_mesh[ix+1 + (iy+1) * self.width] += w22;
+                }
+                else{
+                    self.mesh[ix-1 + (iy-1) * self.width] += w00;
+                    self.mesh[ix + (iy-1) * self.width] += w10;
+                    self.mesh[ix+1 + (iy-1) * self.width] += w20;
+                    
+                    self.mesh[ix-1 + iy * self.width] += w01;
+                    self.mesh[ix + iy * self.width] += w11;
+                    self.mesh[ix+1 + iy * self.width] += w21;
+                    
+                    self.mesh[ix-1 + (iy+1) * self.width] += w02;
+                    self.mesh[ix + (iy+1) * self.width] += w12;
+                    self.mesh[ix+1 + (iy+1) * self.width] += w22;
+                }
+                self.index_mesh[ix + iy * self.width] = index;
             }
         }
     }
 
-    pub fn point_gaussian(&mut self, x: f64, y: f64, weight: f64, sigma:f64) {
+    pub fn point_gaussian(&mut self, x: f64, y: f64, weight: f64, index:usize, highlight: bool, sigma:f64) {
         let fx = (x - self.xmin) / (self.xmax - self.xmin);
         let fy = (y - self.ymin) / (self.ymax - self.ymin);
         let two_sigma=2.0*sigma;
@@ -265,35 +320,69 @@ impl Mesh {
                 w43*=w;
                 w44*=w;
 
-                self.mesh[ix-2 + (iy-2) * self.width] += w00;
-                self.mesh[ix-1 + (iy-2) * self.width] += w10;
-                self.mesh[ix + (iy-2) * self.width] += w20;
-                self.mesh[ix+1 + (iy-2) * self.width] += w30;
-                self.mesh[ix+2 + (iy-2) * self.width] += w40;
-
-                self.mesh[ix-2 + (iy-1) * self.width] += w01;
-                self.mesh[ix-1 + (iy-1) * self.width] += w11;
-                self.mesh[ix + (iy-1) * self.width] += w21;
-                self.mesh[ix+1 + (iy-1) * self.width] += w31;
-                self.mesh[ix+2 + (iy-1) * self.width] += w41;
-
-                self.mesh[ix-2 + iy * self.width] += w02;
-                self.mesh[ix-1 + iy * self.width] += w12;
-                self.mesh[ix + iy * self.width] += w22;
-                self.mesh[ix+1 + iy * self.width] += w32;
-                self.mesh[ix+2 + iy * self.width] += w42;
-
-                self.mesh[ix-2 + (iy+1) * self.width] += w03;
-                self.mesh[ix-1 + (iy+1) * self.width] += w13;
-                self.mesh[ix + (iy+1) * self.width] += w23;
-                self.mesh[ix+1 + (iy+1) * self.width] += w33;
-                self.mesh[ix+2 + (iy+1) * self.width] += w43;
-
-                self.mesh[ix-2 + (iy+2) * self.width] += w04;
-                self.mesh[ix-1 + (iy+2) * self.width] += w14;
-                self.mesh[ix + (iy+2) * self.width] += w24;
-                self.mesh[ix+1 + (iy+2) * self.width] += w34;
-                self.mesh[ix+2 + (iy+2) * self.width] += w44;
+                if highlight{
+                    self.highlight_mesh[ix-2 + (iy-2) * self.width] += w00;
+                    self.highlight_mesh[ix-1 + (iy-2) * self.width] += w10;
+                    self.highlight_mesh[ix + (iy-2) * self.width] += w20;
+                    self.highlight_mesh[ix+1 + (iy-2) * self.width] += w30;
+                    self.highlight_mesh[ix+2 + (iy-2) * self.width] += w40;
+                    
+                    self.highlight_mesh[ix-2 + (iy-1) * self.width] += w01;
+                    self.highlight_mesh[ix-1 + (iy-1) * self.width] += w11;
+                    self.highlight_mesh[ix + (iy-1) * self.width] += w21;
+                    self.highlight_mesh[ix+1 + (iy-1) * self.width] += w31;
+                    self.highlight_mesh[ix+2 + (iy-1) * self.width] += w41;
+                    
+                    self.highlight_mesh[ix-2 + iy * self.width] += w02;
+                    self.highlight_mesh[ix-1 + iy * self.width] += w12;
+                    self.highlight_mesh[ix + iy * self.width] += w22;
+                    self.highlight_mesh[ix+1 + iy * self.width] += w32;
+                    self.highlight_mesh[ix+2 + iy * self.width] += w42;
+                    
+                    self.highlight_mesh[ix-2 + (iy+1) * self.width] += w03;
+                    self.highlight_mesh[ix-1 + (iy+1) * self.width] += w13;
+                    self.highlight_mesh[ix + (iy+1) * self.width] += w23;
+                    self.highlight_mesh[ix+1 + (iy+1) * self.width] += w33;
+                    self.highlight_mesh[ix+2 + (iy+1) * self.width] += w43;
+                    
+                    self.highlight_mesh[ix-2 + (iy+2) * self.width] += w04;
+                    self.highlight_mesh[ix-1 + (iy+2) * self.width] += w14;
+                    self.highlight_mesh[ix + (iy+2) * self.width] += w24;
+                    self.highlight_mesh[ix+1 + (iy+2) * self.width] += w34;
+                    self.highlight_mesh[ix+2 + (iy+2) * self.width] += w44;
+                }
+                else{
+                    self.mesh[ix-2 + (iy-2) * self.width] += w00;
+                    self.mesh[ix-1 + (iy-2) * self.width] += w10;
+                    self.mesh[ix + (iy-2) * self.width] += w20;
+                    self.mesh[ix+1 + (iy-2) * self.width] += w30;
+                    self.mesh[ix+2 + (iy-2) * self.width] += w40;
+                    
+                    self.mesh[ix-2 + (iy-1) * self.width] += w01;
+                    self.mesh[ix-1 + (iy-1) * self.width] += w11;
+                    self.mesh[ix + (iy-1) * self.width] += w21;
+                    self.mesh[ix+1 + (iy-1) * self.width] += w31;
+                    self.mesh[ix+2 + (iy-1) * self.width] += w41;
+                    
+                    self.mesh[ix-2 + iy * self.width] += w02;
+                    self.mesh[ix-1 + iy * self.width] += w12;
+                    self.mesh[ix + iy * self.width] += w22;
+                    self.mesh[ix+1 + iy * self.width] += w32;
+                    self.mesh[ix+2 + iy * self.width] += w42;
+                    
+                    self.mesh[ix-2 + (iy+1) * self.width] += w03;
+                    self.mesh[ix-1 + (iy+1) * self.width] += w13;
+                    self.mesh[ix + (iy+1) * self.width] += w23;
+                    self.mesh[ix+1 + (iy+1) * self.width] += w33;
+                    self.mesh[ix+2 + (iy+1) * self.width] += w43;
+                    
+                    self.mesh[ix-2 + (iy+2) * self.width] += w04;
+                    self.mesh[ix-1 + (iy+2) * self.width] += w14;
+                    self.mesh[ix + (iy+2) * self.width] += w24;
+                    self.mesh[ix+1 + (iy+2) * self.width] += w34;
+                    self.mesh[ix+2 + (iy+2) * self.width] += w44;
+                }
+                self.index_mesh[ix + iy * self.width] = index;
             }
         }
     }
@@ -308,15 +397,41 @@ impl Mesh {
         }
     }
 
+    pub fn normalize_processed_highlight_mesh(&mut self) {
+        let mut maximum =self.processed_highlight_mesh[0];
+        for &value in self.processed_highlight_mesh.iter() {
+            maximum = maximum.max(value);
+        }
+        for i in 0..self.processed_highlight_mesh.len() {
+            self.processed_highlight_mesh[i] /= maximum;
+        }
+    }
+
     pub fn multiply_processed_mesh(&mut self, value:f64) {
         for i in 0..self.processed_mesh.len() {
             self.processed_mesh[i] *= value;
+        }
+    }
+    pub fn multiply_processed_highlight_mesh(&mut self, value:f64) {
+        for i in 0..self.processed_highlight_mesh.len() {
+            self.processed_highlight_mesh[i] *= value;
         }
     }
 
     pub fn to_processed_mesh(&mut self) {
         for i in 0..self.mesh.len() {
             self.processed_mesh[i] = self.mesh[i];
+        }
+    }
+    pub fn to_processed_highlight_mesh(&mut self) {
+        for i in 0..self.mesh.len() {
+            self.processed_highlight_mesh[i] = self.highlight_mesh[i];
+        }
+    }
+    pub fn to_processed_mesh_sum_highlight(&mut self) {
+        for i in 0..self.mesh.len() {
+            self.processed_mesh[i] = self.mesh[i]+self.highlight_mesh[i];
+            self.processed_highlight_mesh[i] = 0.0;
         }
     }
 
@@ -382,32 +497,41 @@ impl Mesh {
             self.rgba8[4 * i + 3] = 255;
         }
     }
+    pub fn add_rgba8_red_highlight(&mut self) {
+        for (i, m) in self.processed_highlight_mesh.iter().enumerate() {
+            let red: u8 = if *m < 0.0 {
+                0
+            } else {
+                if *m >= 1.0 {
+                    255
+                } else {
+                    (255.0 * m) as u8
+                }
+            };
+            self.rgba8[4 * i] = red;
+        }
+    }
 
-    pub fn plain_points(&mut self, vx: &Vec<f64>, vy: &Vec<f64>, antialiased: bool) {
+    pub fn add_points(&mut self, xyi: &[(f64, f64, f64, usize, bool)], antialiased: bool) {
         if antialiased {
-            for (&x, &y) in vx.iter().zip(vy.iter()) {
-                self.point_antialiased(x, y, 1.0);
+            for (x, y, w, index, highlight) in xyi {
+                self.point_antialiased(*x, *y, *w, *index, *highlight);
             }
         }
         else{
-            for (&x, &y) in vx.iter().zip(vy.iter()) {
-                self.point(x, y, 1.0);
+            for (x, y, w, index, highlight) in xyi {
+                self.point(*x, *y, *w, *index, *highlight);
             }
         }
     }
-    pub fn add_points(&mut self, xyi: &[(f64, f64, usize)], antialiased: bool) {
-        if antialiased {
-            for (x, y, _) in xyi {
-//                self.point_antialiased(*x, *y, 1.0);
-                self.point_gaussian(*x, *y, 1.0, 1.0);
-            }
-        }
-        else{
-            for (x, y, _) in xyi {
-                self.point(*x, *y, 1.0);
-            }
+
+    pub fn add_points_gaussian(&mut self, xyi: &[(f64, f64, f64, usize, bool)], sigma:f64) {
+        for (x, y, w, index, highlight) in xyi {
+            self.point_gaussian(*x, *y, *w, *index, *highlight, sigma);
         }
     }
+
+    
     pub fn test_pattern(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {

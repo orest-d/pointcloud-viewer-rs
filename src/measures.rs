@@ -2,8 +2,6 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 
-use std::collections::HashMap;
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NumericStatistics {
     sum_of_values: f64,

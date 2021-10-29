@@ -134,6 +134,19 @@ impl PointData {
             None
         }
     }
+
+    pub fn weighted_points<'a>(&'a self, x_column:&'a str, y_column:&'a str, weight_column:&'a str)-> Option<Box<dyn Iterator<Item = (f64,f64,f64,usize)> + 'a>>{
+        if self.data.contains_key(x_column) && self.data.contains_key(y_column) && self.data.contains_key(weight_column){
+            Some(Box::new(
+                self.data[x_column].iter().zip(self.data[y_column].iter()).zip(self.data[weight_column].iter()).enumerate().map(
+                    |(i,((x,y),w))| (*x,*y,*w, i)
+                )
+            ))
+        }
+        else{
+            None
+        }
+    }
 }
 
 pub fn test_point_data() -> Result<PointData> {
