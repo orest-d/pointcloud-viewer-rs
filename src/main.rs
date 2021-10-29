@@ -10,6 +10,7 @@ mod pipeline;
 mod pointdata;
 
 use pipeline::*;
+use mesh::HighlightType;
 
 fn window_conf() -> Conf {
     Conf {
@@ -86,12 +87,21 @@ async fn main() -> Result<()> {
                             pipeline.set_highlight_value(highlight_value);
                         });
 
+                    let mut highlight_type = pipeline.highlight_type();
+                    ui.vertical(|ui| {
+                        ui.radio_value(&mut highlight_type, HighlightType::Highlight, "Normal");
+                        ui.radio_value(&mut highlight_type, HighlightType::NoHighlight, "No highlight");
+                        ui.radio_value(&mut highlight_type, HighlightType::HighlighedOnly, "Highlighted only");
+                        ui.radio_value(&mut highlight_type, HighlightType::NonHighlightedOnly, "Non-highlighted only");
+                    });
+                    pipeline.set_highlight_type(highlight_type);
+
                     let mut gaussian_points = pipeline.gaussian_points();
                     ui.checkbox(&mut gaussian_points, "Gaussian points");
                     pipeline.set_gaussian_points(gaussian_points);
 
                     let mut point_sigma = pipeline.point_sigma();
-                    ui.add(egui::Slider::new(&mut point_sigma, 0.0..=5.0));
+                    ui.add(egui::Slider::new(&mut point_sigma, 0.0..=10.0));
                     pipeline.set_point_sigma(point_sigma);
 
                     ui.label("Brighthess:");
