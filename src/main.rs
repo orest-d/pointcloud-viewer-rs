@@ -212,6 +212,7 @@ async fn main() -> Result<()> {
                     .min_col_width(50.0)
                     .max_col_width(200.0)
                     .show(ui, |ui| {
+//                        let tstat = stat.transpose();
                         for row in stat.iter() {
                             for item in row.iter(){
                                 ui.label(item);

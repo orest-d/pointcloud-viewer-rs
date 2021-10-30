@@ -4,6 +4,7 @@ extern crate serde_yaml;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NumericStatistics {
+    count: usize,
     sum_of_values: f64,
     sum_of_values2: f64,
     sum_of_values3: f64,
@@ -16,6 +17,7 @@ pub struct NumericStatistics {
 impl NumericStatistics {
     pub fn new() -> NumericStatistics {
         NumericStatistics {
+            count: 0,
             sum_of_values: 0.0,
             sum_of_values2: 0.0,
             sum_of_values3: 0.0,
@@ -24,6 +26,40 @@ impl NumericStatistics {
             minimum: None,
             maximum: None,
         }
+    }
+
+    pub fn all_measure_names(&self)->Vec<String> {
+        let mut v=Vec::new();
+        v.push("Count".to_owned());
+        v.push("Minimum".to_owned());
+        v.push("Maximum".to_owned());
+        v.push("Mean".to_owned());
+        v.push("Variance".to_owned());
+        v.push("StdDev".to_owned());
+        v.push("Skewness".to_owned());
+        v.push("Kurtosis".to_owned());
+        v
+    }
+
+    pub fn all_measure_values(&self)->Vec<String> {
+        let mut v=Vec::new();
+        v.push(format!("{}",self.count));
+        let mut push = |x:Option<f64>|{
+            if let Some(xx)=x{
+                v.push(format!("{}",xx));
+            }
+            else{
+                v.push("".to_owned());
+            }
+        };
+        push(self.minimum);
+        push(self.maximum);
+        push(self.mean());
+        push(self.variance());
+        push(self.stddev());
+        push(self.skewness());
+        push(self.kurtosis());
+        v
     }
 
     pub fn create_empty(&self) -> NumericStatistics {
@@ -36,6 +72,7 @@ impl NumericStatistics {
             let wx2 = wx * xi;
             let wx3 = wx2 * xi;
             let wx4 = wx3 * xi;
+            self.count+=1;
 
             self.sum_of_values += wx;
             self.sum_of_values2 += wx2;
@@ -61,6 +98,7 @@ impl NumericStatistics {
             let wx2 = wx * xi;
             let wx3 = wx2 * xi;
             let wx4 = wx3 * xi;
+            self.count+=1;
 
             self.sum_of_values += wx;
             self.sum_of_values2 += wx2;
@@ -86,6 +124,7 @@ impl NumericStatistics {
         self.sum_of_values3 += analyzer.sum_of_values3;
         self.sum_of_values4 += analyzer.sum_of_values4;
         self.sum_of_weights += analyzer.sum_of_weights;
+        self.count += analyzer.count;
 
         if let Some(x) = self.minimum {
             if let Some(y) = analyzer.minimum {
