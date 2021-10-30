@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     let mut mouse_origin = None;
     pipeline.load("data.csv").await?;
 //    println!("{}", pipeline.point_data.to_csv_simple());
-    let margin = 10.0f32;
+    let margin = 6.0f32;
     let size_x = pipeline.parameters.mesh_width as f32;
     let size_y = pipeline.parameters.mesh_height as f32;
     loop {
@@ -43,16 +43,17 @@ async fn main() -> Result<()> {
                     if ui.button("Zoom all").clicked() {
                         pipeline.zoom_all();
                     }
-                    let mut zoom = pipeline.get_zoom();
-                    ui.add(egui::Slider::new(&mut zoom, 0.5..=10.0));
-                    pipeline.set_zoom(zoom);
-
-                    let mut aspect_ratio = pipeline.get_aspect_ratio();
-                    ui.add(egui::Slider::new(&mut aspect_ratio, 0.5..=2.0));
-                    pipeline.set_aspect_ratio(aspect_ratio);
 
                     egui::Grid::new("Coordinates grid").show(ui, |ui|{
+                        let mut zoom = pipeline.get_zoom();
+                        ui.add(egui::Slider::new(&mut zoom, 0.5..=10.0));
+                        pipeline.set_zoom(zoom);
 
+                        let mut aspect_ratio = pipeline.get_aspect_ratio();
+                        ui.add(egui::Slider::new(&mut aspect_ratio, 0.5..=2.0));
+                        pipeline.set_aspect_ratio(aspect_ratio);
+                        ui.end_row();
+    
                         egui::ComboBox::from_label("X")
                         .selected_text(pipeline.xcolumn())
                         .show_ui(ui, |ui| {
@@ -204,7 +205,7 @@ async fn main() -> Result<()> {
         });
         pipeline.run();
         if let Some(texture) = pipeline.texture {
-            draw_texture(texture, 10.0, 10.0, Color::from_rgba(255, 255, 255, 255));
+            draw_texture(texture, margin, margin, Color::from_rgba(255, 255, 255, 255));
         }
         egui_macroquad::draw();
         // Draw things after egui
