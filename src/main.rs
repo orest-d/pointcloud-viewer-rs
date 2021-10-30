@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
     let margin = 6.0f32;
     let size_x = pipeline.parameters.mesh_width as f32;
     let size_y = pipeline.parameters.mesh_height as f32;
+    let mut statistics = None; 
     loop {
         clear_background(DARKBLUE);
         egui_macroquad::ui(|egui_ctx| {
@@ -180,12 +181,13 @@ async fn main() -> Result<()> {
                             let dy = (y2-y1) as f64;
                             //println!("Shift {} {}",dx,dy);
                             pipeline.relative_offset(dx, dy);
+                            statistics = Some(pipeline.statistics(x2 as f64, y2 as f64));
                         }
 
                     }
                 }
                 if let Some(pos) = ui.input().pointer.hover_pos(){
-                    if let Some(index) = pipeline.mesh.get_index_wide((pos.x-10.0) as usize, (pos.y-10.0) as usize){
+                    if let Some(index) = pipeline.mesh.get_index_wide((pos.x-margin) as usize, (pos.y-margin) as usize){
                         ui.label(format!("Index: {}",index));
                         egui::Grid::new("Data")
                         .striped(true)
@@ -201,6 +203,24 @@ async fn main() -> Result<()> {
                     }
                 }
             });
+
+            if let Some(stat) = &statistics{
+                egui::Window::new("Statistics").default_pos((2.0*margin+size_x, 320.0))
+                .show(egui_ctx, |ui| {
+                    egui::Grid::new("Statistics")
+                    .striped(true)
+                    .min_col_width(50.0)
+                    .max_col_width(200.0)
+                    .show(ui, |ui| {
+                        for row in stat.iter() {
+                            for item in row.iter(){
+                                ui.label(item);
+                            }
+                            ui.end_row();
+                        }
+                    });
+                });
+            }
             
         });
         pipeline.run();
