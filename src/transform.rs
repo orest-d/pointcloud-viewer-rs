@@ -1,15 +1,22 @@
-trait Transform{
-    fn new()->Self;
-    fn calibrate(&mut self, values:&[f64])->&mut Self;
+#![allow(dead_code)]
+
+pub trait Transform{
+    fn calibrate(&mut self, values:&[f64]);
     fn transform(&self, value:f64)->Option<f64>;
     fn inverse(&self, value:f64)->Option<f64>;
 }
+pub trait NewTransform{
+    fn new()->Self;
+}
 
-struct Trivial;
+pub struct Trivial;
+
+impl NewTransform for Trivial{
+    fn new()->Self{Trivial}
+}
 
 impl Transform for Trivial{
-    fn new()->Self{Trivial}
-    fn calibrate(&mut self, _values:&[f64])->&mut Self{self}
+    fn calibrate(&mut self, _values:&[f64]){}
     fn transform(&self, value:f64)->Option<f64>{
         Some(value)
     }
@@ -18,14 +25,17 @@ impl Transform for Trivial{
     }
 }
 
-struct Normalize{
+pub struct Normalize{
     minimum:f64,
     delta:f64,
 }
 
-impl Transform for Normalize{
+impl NewTransform for Normalize{
     fn new()->Self{Normalize{minimum:0.0,delta:1.0}}
-    fn calibrate(&mut self, values:&[f64])->&mut Self{
+}
+
+impl Transform for Normalize{
+    fn calibrate(&mut self, values:&[f64]){
         if values.len()>0{
             self.minimum = values[0];
             let mut maximum = values[0];
@@ -46,7 +56,6 @@ impl Transform for Normalize{
             self.minimum=0.0;
             self.delta=1.0;
         }
-        self
     }
     fn transform(&self, value:f64)->Option<f64>{
         Some((value-self.minimum)/self.delta)
@@ -56,14 +65,16 @@ impl Transform for Normalize{
     }
 }
 
-struct Logarithmic{
+pub struct Logarithmic{
     base:f64
 }
 
-impl Transform for Logarithmic{
+impl NewTransform for Logarithmic{
     fn new()->Self{Logarithmic{base:std::f64::consts::E}}
-    fn calibrate(&mut self, _values:&[f64])->&mut Self{
-        self
+}
+
+impl Transform for Logarithmic{
+    fn calibrate(&mut self, _values:&[f64]){
     }
     fn transform(&self, value:f64)->Option<f64>{
         if value>0.0{
@@ -78,23 +89,25 @@ impl Transform for Logarithmic{
     }
 }
 
-struct ComposedTransform<A:Transform,B:Transform>{
+pub struct ComposedTransform<A:Transform+NewTransform,B:Transform+NewTransform>{
     first: Box<A>,
     second: Box<B>
 }
 
-impl<A:Transform,B:Transform> Transform for ComposedTransform<A,B>{
+impl<A:Transform+NewTransform,B:Transform+NewTransform> NewTransform for ComposedTransform<A,B>{
     fn new()->Self{
         ComposedTransform{
             first:Box::new(A::new()),
             second:Box::new(B::new())
         }
     }
-    fn calibrate(&mut self,values:&[f64])->&mut Self{
+}
+
+impl<A:Transform+NewTransform,B:Transform+NewTransform> Transform for ComposedTransform<A,B>{
+    fn calibrate(&mut self,values:&[f64]){
         self.first.calibrate(values);
         let intermediate = values.iter().flat_map(|&x| self.first.transform(x)).collect::<Vec<_>>();
         self.second.calibrate(&intermediate);
-        self
     }
     fn transform(&self, value:f64)->Option<f64>{
         if let Some(x) = self.first.transform(value){
@@ -114,16 +127,16 @@ impl<A:Transform,B:Transform> Transform for ComposedTransform<A,B>{
     }
 }
 
-type NormalizedLogarithmic = ComposedTransform<Logarithmic, Normalize>;
+pub type NormalizedLogarithmic = ComposedTransform<Logarithmic, Normalize>;
 
-struct Quantile{
+pub struct Quantile{
     size:usize,
     values:Vec<f64>,
     quantiles: Vec<f64>
 }
 
 impl Quantile{
-    fn with_size(n: usize)->Self{
+    pub fn with_size(n: usize)->Self{
         Quantile{
             size:n,
             values:Vec::with_capacity(n),
@@ -164,9 +177,12 @@ impl Quantile{
     }
 }
 
-impl Transform for Quantile{
+impl NewTransform for Quantile{
     fn new() -> Self{Quantile::with_size(100)}
-    fn calibrate(&mut self, values:&[f64])->&mut Self{
+}
+
+impl Transform for Quantile{
+    fn calibrate(&mut self, values:&[f64]){
         let mut buffer = values.iter().filter(|x| x.is_finite()).map(|&x| x).collect::<Vec<f64>>();
         buffer.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let n = buffer.len();
@@ -181,7 +197,6 @@ impl Transform for Quantile{
         }
         self.values.push(buffer[n-1]);
         self.quantiles.push(1.0);
-        self
     }
     fn transform(&self, value:f64)->Option<f64>{
         Some(Quantile::general_transform(value, &self.values, &self.quantiles))

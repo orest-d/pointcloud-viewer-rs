@@ -157,34 +157,28 @@ impl Mesh {
         }
         self
     }
-    pub fn get_index(&self, x:usize, y:usize)->Option<usize>{
-        if x<self.width && y<self.height{
-            let index = self.index_mesh[x+self.width*y];
-            if index==0{
+    pub fn get_index(&self, x: usize, y: usize) -> Option<usize> {
+        if x < self.width && y < self.height {
+            let index = self.index_mesh[x + self.width * y];
+            if index == 0 {
                 None
+            } else {
+                Some(index - 1)
             }
-            else{
-                Some(index-1)
-            }
-        }
-        else{
+        } else {
             None
         }
     }
-    pub fn get_index_wide(&self, x:usize, y:usize)->Option<usize>{
-        if let Some(index) = self.get_index(x, y){
+    pub fn get_index_wide(&self, x: usize, y: usize) -> Option<usize> {
+        if let Some(index) = self.get_index(x, y) {
             Some(index)
-        }
-        else if let Some(index) = self.get_index(x+1, y){
+        } else if let Some(index) = self.get_index(x + 1, y) {
             Some(index)
-        }
-        else if let Some(index) = self.get_index(x, y+1){
+        } else if let Some(index) = self.get_index(x, y + 1) {
             Some(index)
-        }
-        else if let Some(index) = self.get_index(x+1, y+1){
+        } else if let Some(index) = self.get_index(x + 1, y + 1) {
             Some(index)
-        }
-        else{
+        } else {
             None
         }
     }
@@ -484,7 +478,7 @@ impl Mesh {
         let fy = (y - self.ymin) / (self.ymax - self.ymin);
         let two_sigma = 2.0 * sigma;
         let n = (2.0 * sigma) as usize;
-        if n<=2{
+        if n <= 2 {
             self.point_gaussian5x5(x, y, weight, index, highlight, sigma);
             return;
         }
@@ -496,58 +490,61 @@ impl Mesh {
         if fx >= 0.0 && fy >= 0.0 {
             let ix = (fx * (self.width as f64)) as usize;
             let iy = (fy * (self.height as f64)) as usize;
-            let dx = (fx * (self.width as f64))  - (ix as f64);
-            let dy = (fy * (self.height as f64)) - (iy as f64);
-            let mut sum = 0.0;
-            for i in 0..dim {
-                let rx = dx + (i as f64) - sub;
-                let rx2 = rx * rx;
-                for j in 0..dim {
-                    let ry = dy + (j as f64) - sub;
-                    let ry2 = ry * ry;
-                    let weight = (-(rx2 + ry2) / two_sigma).exp();
-                    w[i + dim * j] = weight;
-                    sum += weight;
+            if ix < self.width && iy < self.height {
+                let dx = (fx * (self.width as f64)) - (ix as f64);
+                let dy = (fy * (self.height as f64)) - (iy as f64);
+                let mut sum = 0.0;
+                for i in 0..dim {
+                    let rx = dx + (i as f64) - sub;
+                    let rx2 = rx * rx;
+                    for j in 0..dim {
+                        let ry = dy + (j as f64) - sub;
+                        let ry2 = ry * ry;
+                        let weight = (-(rx2 + ry2) / two_sigma).exp();
+                        w[i + dim * j] = weight;
+                        sum += weight;
+                    }
                 }
-            }
-            if sum == 0.0 {
-                sum = 1.0;
-            }
-            for value in w.iter_mut() {
-                *value /= sum;
-                *value *= weight;
-            }
+                if sum == 0.0 {
+                    sum = 1.0;
+                }
+                for value in w.iter_mut() {
+                    *value /= sum;
+                    *value *= weight;
+                }
 
-            if highlight {
-                for i in 0..dim {
-                    let ii = ((ix+i) as isize) - (n as isize);
-                    if ii>=0 && (ii as usize)<self.width{
-                        for j in 0..dim {
-                            let jj = ((iy+j) as isize) - (n as isize);
-                            if jj>=0 && (jj as usize)<self.height{
-//                                println!("ix:{} i:{} iy:{} j:{} n:{} ii:{} jj:{}",ix,i,iy,j,n,ii,jj);
-                                self.highlight_mesh[(ii as usize) + (jj as usize) * self.width] +=
-                                w[i + dim * j];
+                if highlight {
+                    for i in 0..dim {
+                        let ii = ((ix + i) as isize) - (n as isize);
+                        if ii >= 0 && (ii as usize) < self.width {
+                            for j in 0..dim {
+                                let jj = ((iy + j) as isize) - (n as isize);
+                                if jj >= 0 && (jj as usize) < self.height {
+                                    //                                println!("ix:{} i:{} iy:{} j:{} n:{} ii:{} jj:{}",ix,i,iy,j,n,ii,jj);
+                                    self.highlight_mesh
+                                        [(ii as usize) + (jj as usize) * self.width] +=
+                                        w[i + dim * j];
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    for i in 0..dim {
+                        let ii = ((ix + i) as isize) - (n as isize);
+                        if ii >= 0 && (ii as usize) < self.width {
+                            for j in 0..dim {
+                                let jj = ((iy + j) as isize) - (n as isize);
+                                if jj >= 0 && (jj as usize) < self.height {
+                                    //                                println!("ix:{} i:{} iy:{} j:{} n:{} ii:{} jj:{}",ix,i,iy,j,n,ii,jj);
+                                    self.mesh[(ii as usize) + (jj as usize) * self.width] +=
+                                        w[i + dim * j];
+                                }
                             }
                         }
                     }
                 }
-            } else {
-                for i in 0..dim {
-                    let ii = ((ix+i) as isize) - (n as isize);
-                    if ii>=0 && (ii as usize)<self.width{
-                        for j in 0..dim {
-                            let jj = ((iy+j) as isize) - (n as isize);
-                            if jj>=0 && (jj as usize)<self.height{
-//                                println!("ix:{} i:{} iy:{} j:{} n:{} ii:{} jj:{}",ix,i,iy,j,n,ii,jj);
-                                self.mesh[(ii as usize) + (jj as usize) * self.width] +=
-                                w[i + dim * j];
-                            }
-                        }
-                    }
-                }
+                self.index_mesh[ix + iy * self.width] = index;
             }
-            self.index_mesh[ix + iy * self.width] = index;
         }
     }
 

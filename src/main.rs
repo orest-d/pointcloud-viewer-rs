@@ -33,13 +33,15 @@ async fn main() -> Result<()> {
         clear_background(DARKBLUE);
         egui_macroquad::ui(|egui_ctx| {
             egui::Window::new("View setup")
-                .default_pos((850.0, 10.0))
+                .default_pos((820.0, 10.0))
                 .show(egui_ctx, |ui| {
                     //ui.label("Test");
                     if ui.button("Zoom all").clicked() {
                         pipeline.zoom_all();
                     }
-                    egui::ComboBox::from_label("X column")
+                    egui::Grid::new("Coordinates grid").show(ui, |ui|{
+
+                        egui::ComboBox::from_label("X")
                         .selected_text(pipeline.xcolumn())
                         .show_ui(ui, |ui| {
                             let mut xcolumn = pipeline.xcolumn().to_owned();
@@ -48,7 +50,17 @@ async fn main() -> Result<()> {
                             }
                             pipeline.set_xcolumn(xcolumn);
                         });
-                    egui::ComboBox::from_label("Y column")
+                        egui::ComboBox::from_label("X trans.")
+                        .selected_text(pipeline.tx_type().text())
+                        .show_ui(ui, |ui| {
+                            let mut txtype = pipeline.tx_type();
+                            ui.selectable_value(&mut txtype, TransformationType::Linear, "Linear");
+                            ui.selectable_value(&mut txtype, TransformationType::Logarithmic, "Logarithmic");
+                            ui.selectable_value(&mut txtype, TransformationType::Quantile, "Quantile");
+                            pipeline.set_txtype(txtype);
+                        });
+                        ui.end_row();
+                        egui::ComboBox::from_label("Y")
                         .selected_text(pipeline.ycolumn())
                         .show_ui(ui, |ui| {
                             let mut ycolumn = pipeline.ycolumn().to_owned();
@@ -57,7 +69,17 @@ async fn main() -> Result<()> {
                             }
                             pipeline.set_ycolumn(ycolumn);
                         });
-                    egui::ComboBox::from_label("Weight column")
+                        egui::ComboBox::from_label("Y trans.")
+                        .selected_text(pipeline.ty_type().text())
+                        .show_ui(ui, |ui| {
+                            let mut tytype = pipeline.ty_type();
+                            ui.selectable_value(&mut tytype, TransformationType::Linear, "Linear");
+                            ui.selectable_value(&mut tytype, TransformationType::Logarithmic, "Logarithmic");
+                            ui.selectable_value(&mut tytype, TransformationType::Quantile, "Quantile");
+                            pipeline.set_tytype(tytype);
+                        });
+                        ui.end_row();
+                        egui::ComboBox::from_label("Weight")
                         .selected_text(pipeline.weight_column())
                         .show_ui(ui, |ui| {
                             let mut weight_column = pipeline.weight_column().to_owned();
@@ -67,7 +89,8 @@ async fn main() -> Result<()> {
                             }
                             pipeline.set_weight_column(weight_column);
                         });
-                    egui::ComboBox::from_label("Highlight column")
+                        ui.end_row();
+                        egui::ComboBox::from_label("Highlight")
                         .selected_text(pipeline.highlight_column())
                         .show_ui(ui, |ui| {
                             let mut highlight_column = pipeline.highlight_column().to_owned();
@@ -77,7 +100,7 @@ async fn main() -> Result<()> {
                             }
                             pipeline.set_highlight_column(highlight_column);
                         });
-                    egui::ComboBox::from_label("Highlight value")
+                        egui::ComboBox::from_label("Value")
                         .selected_text(pipeline.highlight_value())
                         .show_ui(ui, |ui| {
                             let mut highlight_value = pipeline.highlight_value().to_owned();
@@ -87,15 +110,16 @@ async fn main() -> Result<()> {
                             }
                             pipeline.set_highlight_value(highlight_value);
                         });
-
-                    let mut highlight_type = pipeline.highlight_type();
-                    ui.vertical(|ui| {
-                        ui.radio_value(&mut highlight_type, HighlightType::Highlight, "Normal");
+                        ui.end_row();
+                        let mut highlight_type = pipeline.highlight_type();
+                        ui.radio_value(&mut highlight_type, HighlightType::Highlight, "Highlight");
                         ui.radio_value(&mut highlight_type, HighlightType::NoHighlight, "No highlight");
+                        ui.end_row();
                         ui.radio_value(&mut highlight_type, HighlightType::HighlighedOnly, "Highlighted only");
                         ui.radio_value(&mut highlight_type, HighlightType::NonHighlightedOnly, "Non-highlighted only");
+                        pipeline.set_highlight_type(highlight_type);
                     });
-                    pipeline.set_highlight_type(highlight_type);
+
 
                     let mut gaussian_points = pipeline.gaussian_points();
                     ui.checkbox(&mut gaussian_points, "Gaussian points");
