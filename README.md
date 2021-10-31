@@ -73,4 +73,9 @@ cargo build --release
 The application can be found in 'target/release' directory.
 Copy your data into 'data.csv' in the same directory as the executable before you start it.
 
+# Credits
 
+* [Rust](https://www.rust-lang.org/) - It has been a great experience to use rust as a main language for this project.
+* [Egui](https://github.com/emilk/egui) - fantastic GUI library, easy to use, very portable. I would not even start working on this project without egui...
+* [Macroquad](https://macroquad.rs/) - another great library that Pointcloud Viewer is based on.
+* [Egui-macroquad](https://github.com/optozorax/egui-macroquad) - egui bindings for macroquad.
