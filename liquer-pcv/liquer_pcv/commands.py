@@ -7,13 +7,7 @@ def assets_path():
     return str((Path(__file__).parent/"assets").resolve())
 
 def init():
-    print(f"INIT PCV {assets_path()}")
     web_mount_folder("pointcloud-viewer", assets_path())
-    print("STORE      ", str(get_store()))
-    print("WEB-STORE  ", str(get_web_store()))
-    print("ROOT:      ", get_store().listdir(""))
-    print("WEB:       ", get_store().listdir("web"))
-    print("POINTCLOUD:", get_store().listdir("web/pointcloud-viewer"))
 
 @command
 def pointcloud(state,name,context=None):
