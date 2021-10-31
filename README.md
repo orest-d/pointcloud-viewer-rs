@@ -1,11 +1,15 @@
 # Pointcloud viewer
 
+![Screenshot](https://orest-d.github.io/pointcloud-viewer-rs/assets/demo.jpg)
+
 Pointcloud viewer is a tool for visualization and exploratory data analysis.
 It can read tabular data (i.e. a dataframe) and display selected columns in 2D.
 Pointcloud viewer is designed to handle large amount of points (tested up to 2M),
 where the point density is more relevant than individual points.
 Point density is shown by a color gradient. To help to make points more visible (especially in smaller datasets),
 points can be smeared by a Gaussian function.
+
+See live [demo](https://orest-d.github.io/pointcloud-viewer-rs/).
 
 # Features
 
