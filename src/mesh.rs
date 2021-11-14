@@ -44,7 +44,7 @@ impl Parameters {
             ymax: 1.0,
             gaussian_points: false,
             point_sigma: 1.0,
-            density_multiplier: 1.0,
+            density_multiplier: 0.0,
         }
     }
 
@@ -546,6 +546,35 @@ impl Mesh {
                 self.index_mesh[ix + iy * self.width] = index;
             }
         }
+    }
+
+    fn atan_clamp_mesh(mesh: &mut Vec<f64>, brightness:f64) {
+        let mut sum=0.0f64;
+        let mut count=1.0;
+        for &value in mesh.iter() {
+            if value>0.0{
+                sum+=value;
+                count+=1.0;
+            }
+        }
+        let mut mean = sum/count;
+
+        if mean <= 0.0 {
+            mean = 1.0;
+        }
+
+        let linear_brightness = brightness.exp()/mean/1.0f64.exp();
+        let normalization=1.0/(5.0f64.atan());
+        for i in 0..mesh.len() {
+            let x = mesh[i]*linear_brightness;
+            mesh[i] = x.atan()*normalization;
+        }
+    }
+    pub fn clamp_processed_mesh(&mut self, brightness:f64) {
+        Self::atan_clamp_mesh(&mut self.processed_mesh, brightness);
+    }
+    pub fn clamp_processed_highlight_mesh(&mut self, brightness:f64) {
+        Self::atan_clamp_mesh(&mut self.processed_highlight_mesh, brightness);
     }
 
     pub fn normalize_processed_mesh(&mut self) {

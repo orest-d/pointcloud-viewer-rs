@@ -581,29 +581,34 @@ impl Pipeline {
         match self.highlight_type(){
             HighlightType::Highlight =>{
                 self.mesh.to_processed_mesh();
-                self.mesh.normalize_processed_mesh();
-                self.mesh.multiply_processed_mesh(self.density_multiplier());
+                //self.mesh.normalize_processed_mesh();
+                //self.mesh.multiply_processed_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_mesh(self.density_multiplier());
         
                 self.mesh.to_processed_highlight_mesh();
-                self.mesh.normalize_processed_highlight_mesh();
-                self.mesh.multiply_processed_highlight_mesh(self.density_multiplier());
+                //self.mesh.normalize_processed_highlight_mesh();
+                //self.mesh.multiply_processed_highlight_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_highlight_mesh(self.density_multiplier());
             },
             HighlightType::NoHighlight =>{
                 self.mesh.to_processed_mesh_sum_highlight();
-                self.mesh.normalize_processed_mesh();
-                self.mesh.multiply_processed_mesh(self.density_multiplier());
+                //self.mesh.normalize_processed_mesh();
+                //self.mesh.multiply_processed_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_mesh(self.density_multiplier());
             },
             HighlightType::HighlighedOnly =>{
                 //self.mesh.clean_processed_mesh();
                 self.mesh.to_processed_highlight_mesh();
-                self.mesh.normalize_processed_highlight_mesh();
-                self.mesh.multiply_processed_highlight_mesh(self.density_multiplier());
+                //self.mesh.normalize_processed_highlight_mesh();
+                //self.mesh.multiply_processed_highlight_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_highlight_mesh(self.density_multiplier());
             }
             HighlightType::NonHighlightedOnly =>{
                 self.mesh.clean_processed_highlight_mesh();
                 self.mesh.to_processed_mesh();
-                self.mesh.normalize_processed_mesh();
-                self.mesh.multiply_processed_mesh(self.density_multiplier());
+                //self.mesh.normalize_processed_mesh();
+                //self.mesh.multiply_processed_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_mesh(self.density_multiplier());
             }
         }
         self.stage = Stage::Stage3ProcessedMesh;

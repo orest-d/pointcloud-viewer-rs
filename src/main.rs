@@ -192,7 +192,7 @@ async fn main() -> Result<()> {
 
                     ui.label("Brighthess:");
                     let mut density_multiplier = pipeline.density_multiplier();
-                    ui.add(egui::Slider::new(&mut density_multiplier, 0.0..=5.0));
+                    ui.add(egui::Slider::new(&mut density_multiplier, -3.0..=3.0));
                     pipeline.set_density_multiplier(density_multiplier);
 
                     ui.checkbox(&mut enable_statistics, "Enable statistics");
