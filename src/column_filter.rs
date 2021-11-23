@@ -15,7 +15,7 @@ pub enum Operator{
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
 pub struct ColumnFilter{
-    text:String,
+    tokens: Vec<String>,
     interpretation: Interpretation,
     operator:Operator
 }
@@ -23,9 +23,16 @@ pub struct ColumnFilter{
 impl ColumnFilter{
     pub fn new()->Self{
         ColumnFilter{
-            text:"".to_owned(),
+            tokens:Vec::new(),
             interpretation: Interpretation::Contains,
             operator:Operator::And,
+        }
+    }
+    pub fn from_text(text: &str, interpretation: Interpretation, operator: Operator)->ColumnFilter{
+        ColumnFilter{
+            tokens: text.split_whitespace().map(|x| x.to_string()).collect(),
+            interpretation: interpretation,
+            operator:operator
         }
     }
 }
