@@ -19,9 +19,9 @@ serde_yaml = "0.8.11"
 #nom = {version="5.1.1", features=["regexp"]}
 cgmath = "0.18.0"
 
-egui = "0.14.2"
-egui-macroquad = "0.6.1"
-egui-miniquad = "0.6.0"
+egui = "0.15.0"
+egui-macroquad = "0.7.0"
+egui-miniquad = "0.7.0"
 macroquad = "0.3.3"
 
 csv = "1.1.6"

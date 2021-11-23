@@ -9,6 +9,7 @@ mod mesh;
 mod pipeline;
 mod pointdata;
 mod transform;
+mod column_filter;
 
 use mesh::HighlightType;
 use pipeline::*;
@@ -35,18 +36,24 @@ async fn main() -> Result<()> {
     let size_y = pipeline.parameters.mesh_height as f32;
     let mut statistics = None;
     let mut enable_statistics = false;
+    let mut column_selector = false;
     loop {
-        clear_background(DARKBLUE);
+//        clear_background(DARKBLUE);
+        clear_background(Color::from_rgba(0x12,0x12,0x12,0xff));
         egui_macroquad::ui(|egui_ctx| {
             egui::Window::new("View setup")
                 .default_pos((2.0 * margin + size_x, margin))
                 .show(egui_ctx, |ui| {
                     //ui.label("Test");
-                    if ui.button("Zoom all").clicked() {
-                        pipeline.zoom_all();
-                    }
 
                     egui::Grid::new("Coordinates grid").show(ui, |ui| {
+                        if ui.button("Zoom all").clicked() {
+                            pipeline.zoom_all();
+                        }
+                        if ui.button("Select columns").clicked() {
+                            column_selector = !column_selector;
+                        }
+                        ui.end_row();
                         let mut zoom = pipeline.get_zoom();
                         ui.add(egui::Slider::new(&mut zoom, 0.5..=10.0));
                         pipeline.set_zoom(zoom);
@@ -199,7 +206,7 @@ async fn main() -> Result<()> {
                     //                    dbg!(&ui.input().pointer.hover_pos());
                 });
             egui::Window::new("Data")
-                .default_pos((2.0 * margin + size_x, 370.0))
+                .default_pos((2.0 * margin + size_x, 390.0))
                 .show(egui_ctx, |ui| {
                     ui.label(format!("{:?}", ui.input().pointer.hover_pos()));
                     if let Some(origin) = ui.input().pointer.press_origin() {
@@ -250,9 +257,9 @@ async fn main() -> Result<()> {
             if enable_statistics {
                 if let Some(stat) = &statistics {
                     egui::Window::new("Statistics")
-                        .default_pos((2.0 * margin + size_x, 320.0))
+                        .default_pos((2.0 * margin + size_x, 380.0))
                         .show(egui_ctx, |ui| {
-                            ScrollArea::auto_sized().show(ui, |ui| {
+                            ScrollArea::both().show(ui, |ui| {
                                 egui::Grid::new("Statistics")
                                     .striped(true)
                                     .min_col_width(50.0)
@@ -269,6 +276,18 @@ async fn main() -> Result<()> {
                             });
                         });
                 }
+            }
+            if column_selector {
+                egui::Window::new("Select columns")
+                    .default_pos((2.0 * margin + size_x, 320.0))
+                    .show(egui_ctx, |ui| {
+                        egui::Grid::new("Statistics").show(ui, |ui| {
+                            ui.label("Columns");
+                            let mut my_string = String::new();
+                            ui.text_edit_singleline(&mut my_string);
+                            ui.end_row();
+                        });
+                    });
             }
         });
         pipeline.run();
