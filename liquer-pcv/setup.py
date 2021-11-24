@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="liquer-pcv",
-    version="0.1.1",
+    version="0.2.0",
     author="Orest Dubay",
     author_email="orest3.dubay@gmail.com",
     description="""LiQuer - Pointcloud Viewer is tool for exploratory data analysis.""",
