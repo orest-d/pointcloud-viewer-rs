@@ -5,14 +5,15 @@ use anyhow::Result;
 use egui::containers::ScrollArea;
 use macroquad::prelude::*;
 mod column_filter;
+mod highlight;
 mod measures;
 mod mesh;
 mod pipeline;
 mod pointdata;
 mod transform;
-mod highlight;
 
 use column_filter::*;
+use highlight::*;
 use mesh::HighlightType;
 use pipeline::*;
 
@@ -38,14 +39,15 @@ async fn main() -> Result<()> {
     let size_y = pipeline.parameters.mesh_height as f32;
     let mut statistics = None;
     let mut enable_statistics = false;
-    let mut column_selector = false;
+    let mut enable_column_selector = false;
     let mut column_selection = String::new();
+    let mut enable_highlight = false;
 
     loop {
         //        clear_background(DARKBLUE);
         clear_background(Color::from_rgba(0x12, 0x12, 0x12, 0xff));
         egui_macroquad::ui(|egui_ctx| {
-            if column_selector {
+            if enable_column_selector {
                 egui::Window::new("Select columns")
                     .default_pos((2.0 * margin + size_x, 320.0))
                     .show(egui_ctx, |ui| {
@@ -68,6 +70,7 @@ async fn main() -> Result<()> {
             } else {
                 pipeline.point_data.reset_headers();
             }
+
             egui::Window::new("View setup")
                 .default_pos((2.0 * margin + size_x, margin))
                 .show(egui_ctx, |ui| {
@@ -77,15 +80,17 @@ async fn main() -> Result<()> {
                         if ui.button("Zoom all").clicked() {
                             pipeline.zoom_all();
                         }
-                        if column_selector{
+                        if enable_column_selector {
                             if ui.button("All columns").clicked() {
-                                column_selector = !column_selector;
-                            }    
-                        }
-                        else{
+                                enable_column_selector = !enable_column_selector;
+                            }
+                        } else {
                             if ui.button("Select columns").clicked() {
-                                column_selector = !column_selector;
-                            }    
+                                enable_column_selector = !enable_column_selector;
+                            }
+                        }
+                        if ui.button("Highlight").clicked() {
+                            enable_highlight = !enable_highlight;
                         }
                         ui.end_row();
                         let mut zoom = pipeline.get_zoom();
@@ -310,6 +315,68 @@ async fn main() -> Result<()> {
                             });
                         });
                 }
+            }
+
+            if enable_highlight {
+                egui::Window::new("Highlight Settings")
+                    .default_pos((2.0 * margin + size_x, 320.0))
+                    .show(egui_ctx, |ui| {
+                        egui::Grid::new("Coordinates grid").show(ui, |ui| {
+                            egui::ComboBox::from_label("Highlight")
+                                .selected_text(pipeline.highlight_column())
+                                .show_ui(ui, |ui| {
+                                    let mut highlight_column =
+                                        pipeline.highlight_column().to_owned();
+                                    ui.selectable_value(&mut highlight_column, "".to_string(), "");
+                                    for column in pipeline.point_data.headers.iter() {
+                                        ui.selectable_value(
+                                            &mut highlight_column,
+                                            column.to_string(),
+                                            column,
+                                        );
+                                    }
+                                    pipeline.set_highlight_column(highlight_column);
+                                });
+                            egui::ComboBox::from_label("Value")
+                                .selected_text(pipeline.highlight_value())
+                                .show_ui(ui, |ui| {
+                                    let mut highlight_value = pipeline.highlight_value().to_owned();
+                                    ui.selectable_value(&mut highlight_value, "".to_string(), "");
+                                    for value in pipeline.highlightable_values.iter() {
+                                        ui.selectable_value(
+                                            &mut highlight_value,
+                                            value.to_string(),
+                                            value,
+                                        );
+                                    }
+                                    pipeline.set_highlight_value(highlight_value);
+                                });
+                            ui.end_row();
+                            let mut highlight_type = pipeline.highlight_type();
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::Highlight,
+                                "Highlight",
+                            );
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::NoHighlight,
+                                "No highlight",
+                            );
+                            ui.end_row();
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::HighlighedOnly,
+                                "Highlighted only",
+                            );
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::NonHighlightedOnly,
+                                "Non-highlighted only",
+                            );
+                            pipeline.set_highlight_type(highlight_type);
+                        });
+                    });
             }
         });
         pipeline.run();
