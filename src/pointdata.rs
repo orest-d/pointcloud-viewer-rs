@@ -32,7 +32,7 @@ impl PointData {
             self.headers.push(column.to_owned());
         }
     }
-    pub fn filter_headers(&mut self, filter: fn(&str) -> bool) {
+    pub fn filter_headers(&mut self, filter: &dyn Fn(&str) -> bool) {
         self.headers.clear();
         for column in self.all_headers.iter() {
             if filter(&column) {
@@ -151,6 +151,7 @@ impl PointData {
                 .flat_map(|r| r[i].parse::<f64>())
                 .collect::<Vec<f64>>();
             point_data.headers.push(column.to_owned());
+            point_data.all_headers.push(column.to_owned());
             if data.len() == records.len() {
                 point_data.data.insert(column.to_owned(), data);
             } else {

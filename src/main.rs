@@ -4,13 +4,14 @@ extern crate serde_derive;
 use anyhow::Result;
 use egui::containers::ScrollArea;
 use macroquad::prelude::*;
+mod column_filter;
 mod measures;
 mod mesh;
 mod pipeline;
 mod pointdata;
 mod transform;
-mod column_filter;
 
+use column_filter::*;
 use mesh::HighlightType;
 use pipeline::*;
 
@@ -37,10 +38,35 @@ async fn main() -> Result<()> {
     let mut statistics = None;
     let mut enable_statistics = false;
     let mut column_selector = false;
+    let mut column_selection = String::new();
+
     loop {
-//        clear_background(DARKBLUE);
-        clear_background(Color::from_rgba(0x12,0x12,0x12,0xff));
+        //        clear_background(DARKBLUE);
+        clear_background(Color::from_rgba(0x12, 0x12, 0x12, 0xff));
         egui_macroquad::ui(|egui_ctx| {
+            if column_selector {
+                egui::Window::new("Select columns")
+                    .default_pos((2.0 * margin + size_x, 320.0))
+                    .show(egui_ctx, |ui| {
+                        ui.label("Columns");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut column_selection).desired_width(200.0),
+                        );
+                    });
+                //                println!("Filter for {}",column_selection);
+                let filter = ColumnFilter::from_text(
+                    &column_selection,
+                    Interpretation::Contains,
+                    Operator::Or,
+                    false,
+                );
+                pipeline.filter_headers(&|x| filter.filter(x));
+            //                for x in pipeline.point_data.headers.iter() {
+            //                    println!("selected header {}",x);
+            //                }
+            } else {
+                pipeline.point_data.reset_headers();
+            }
             egui::Window::new("View setup")
                 .default_pos((2.0 * margin + size_x, margin))
                 .show(egui_ctx, |ui| {
@@ -50,8 +76,15 @@ async fn main() -> Result<()> {
                         if ui.button("Zoom all").clicked() {
                             pipeline.zoom_all();
                         }
-                        if ui.button("Select columns").clicked() {
-                            column_selector = !column_selector;
+                        if column_selector{
+                            if ui.button("All columns").clicked() {
+                                column_selector = !column_selector;
+                            }    
+                        }
+                        else{
+                            if ui.button("Select columns").clicked() {
+                                column_selector = !column_selector;
+                            }    
                         }
                         ui.end_row();
                         let mut zoom = pipeline.get_zoom();
@@ -66,7 +99,7 @@ async fn main() -> Result<()> {
                             .selected_text(pipeline.xcolumn())
                             .show_ui(ui, |ui| {
                                 let mut xcolumn = pipeline.xcolumn().to_owned();
-                                for column in pipeline.data_columns.iter() {
+                                for column in pipeline.point_data.headers.iter() {
                                     ui.selectable_value(&mut xcolumn, column.to_string(), column);
                                 }
                                 pipeline.set_xcolumn(xcolumn);
@@ -97,7 +130,7 @@ async fn main() -> Result<()> {
                             .selected_text(pipeline.ycolumn())
                             .show_ui(ui, |ui| {
                                 let mut ycolumn = pipeline.ycolumn().to_owned();
-                                for column in pipeline.data_columns.iter() {
+                                for column in pipeline.point_data.headers.iter() {
                                     ui.selectable_value(&mut ycolumn, column.to_string(), column);
                                 }
                                 pipeline.set_ycolumn(ycolumn);
@@ -129,7 +162,7 @@ async fn main() -> Result<()> {
                             .show_ui(ui, |ui| {
                                 let mut weight_column = pipeline.weight_column().to_owned();
                                 ui.selectable_value(&mut weight_column, "".to_string(), "");
-                                for column in pipeline.data_columns.iter() {
+                                for column in pipeline.point_data.headers.iter() {
                                     ui.selectable_value(
                                         &mut weight_column,
                                         column.to_string(),
@@ -144,7 +177,7 @@ async fn main() -> Result<()> {
                             .show_ui(ui, |ui| {
                                 let mut highlight_column = pipeline.highlight_column().to_owned();
                                 ui.selectable_value(&mut highlight_column, "".to_string(), "");
-                                for column in pipeline.aux_columns.iter() {
+                                for column in pipeline.point_data.headers.iter() {
                                     ui.selectable_value(
                                         &mut highlight_column,
                                         column.to_string(),
@@ -276,18 +309,6 @@ async fn main() -> Result<()> {
                             });
                         });
                 }
-            }
-            if column_selector {
-                egui::Window::new("Select columns")
-                    .default_pos((2.0 * margin + size_x, 320.0))
-                    .show(egui_ctx, |ui| {
-                        egui::Grid::new("Statistics").show(ui, |ui| {
-                            ui.label("Columns");
-                            let mut my_string = String::new();
-                            ui.text_edit_singleline(&mut my_string);
-                            ui.end_row();
-                        });
-                    });
             }
         });
         pipeline.run();

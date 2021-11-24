@@ -205,6 +205,9 @@ impl Pipeline {
 
         Ok(())
     }
+    pub fn filter_headers(&mut self, filter: &dyn Fn(&str) -> bool) {
+        self.point_data.filter_headers(filter);
+    }
 
     pub fn view_box(&self)->(f64, f64, f64, f64){
         if self.aspect_ratio>=1.0{
@@ -489,6 +492,32 @@ impl Pipeline {
             }
         }
         else{
+            let xdata = if self.point_data.data.contains_key(self.xcolumn()){
+                self.point_data.data[self.xcolumn()].iter().map(|x| Some(*x)).collect::<Vec<_>>()
+            }
+            else{
+                assert!(self.point_data.aux.contains_key(self.xcolumn()));
+                self.point_data.aux[self.xcolumn()].iter().map(|x| x.parse::<f64>().ok()).collect::<Vec<_>>()
+            };
+            let ydata = if self.point_data.data.contains_key(self.ycolumn()){
+                self.point_data.data[self.ycolumn()].iter().map(|x| Some(*x)).collect::<Vec<_>>()
+            }
+            else{
+                assert!(self.point_data.aux.contains_key(self.ycolumn()));
+                self.point_data.aux[self.ycolumn()].iter().map(|x| x.parse::<f64>().ok()).collect::<Vec<_>>()
+            };
+            
+            self.tx.calibrate(xdata.iter().flatten().map(|x| *x).collect::<Vec<_>>().as_slice());
+            self.ty.calibrate(ydata.iter().flatten().map(|x| *x).collect::<Vec<_>>().as_slice());
+            for (i,pair) in xdata.iter().zip(ydata.iter()).enumerate() {
+                if let (&Some(x), &Some(y)) = pair{
+                    if let (Some(xx), Some(yy)) = (self.tx.transform(x), self.ty.transform(y)){
+                        let w:f64 = self.weights()[i];
+                        self.xyi.push((xx, yy, w, i+1, self.highlights[i]));
+                    }
+                }
+            }
+                
             self.tx = TransformationType::Linear.to_transform();
             self.ty = TransformationType::Linear.to_transform();
         }
