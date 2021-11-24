@@ -22,6 +22,7 @@ See live [demo](https://orest-d.github.io/pointcloud-viewer-rs/).
 * Optionally specify a weight for each point
 * Highlight a group of points based on a selected value in a specified column
 * Highlighting supports four different modes (depending what data are shown)
+* Columns can be searched/reduced (which comes handy in datasets with many columns)
 * Statistics calculator (experimental)
 * Pointcloud viewer can be compiled to webassembly and used on the web - either in connection to LiQuer framework or standalone. It as well can be compiled to a desktop application.
 

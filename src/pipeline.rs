@@ -487,7 +487,7 @@ impl Pipeline {
             for (i,(&x,&y)) in xdata.iter().zip(ydata.iter()).enumerate() {
                 if let (Some(xx), Some(yy)) = (self.tx.transform(x), self.ty.transform(y)){
                     let w:f64 = self.weights()[i];
-                    self.xyi.push((xx, yy, w, i+1, self.highlights[i]));
+                    self.xyi.push((xx, 1.0-yy, w, i+1, self.highlights[i]));
                 }
             }
         }
@@ -513,30 +513,14 @@ impl Pipeline {
                 if let (&Some(x), &Some(y)) = pair{
                     if let (Some(xx), Some(yy)) = (self.tx.transform(x), self.ty.transform(y)){
                         let w:f64 = self.weights()[i];
-                        self.xyi.push((xx, yy, w, i+1, self.highlights[i]));
+                        self.xyi.push((xx, 1.0-yy, w, i+1, self.highlights[i]));
                     }
                 }
             }
                 
-            self.tx = TransformationType::Linear.to_transform();
-            self.ty = TransformationType::Linear.to_transform();
+//            self.tx = TransformationType::Linear.to_transform();
+//            self.ty = TransformationType::Linear.to_transform();
         }
-        /*
-        if let Some(xyi_iter) = self
-        .point_data
-        .points(&self.parameters.xcolumn, &self.parameters.ycolumn){
-            for (x, y, i) in xyi_iter {
-                if (x >= self.parameters.xmin)
-                    & (x <= self.parameters.xmax)
-                    & (y >= self.parameters.ymin)
-                    & (y <= self.parameters.ymax)
-                {
-                    let w:f64 = self.weights()[i];
-                    self.xyi.push((x, y, w, i+1, self.highlights[i]));
-                }
-            }    
-        }
-        */
         self.stage = Stage::Stage1XYI;
     }
 

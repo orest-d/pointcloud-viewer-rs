@@ -10,6 +10,7 @@ mod mesh;
 mod pipeline;
 mod pointdata;
 mod transform;
+mod highlight;
 
 use column_filter::*;
 use mesh::HighlightType;
