@@ -12,7 +12,8 @@ pub enum HighlightFilterVariants{
     Selection(String, String),
     GreaterThan(String, f64),
     LessThan(String, f64),
-    Band(String, f64, f64)
+    Band(String, f64, f64),
+    Empty
 }
 
 impl HighlightFilter for HighlightFilterVariants{
@@ -100,6 +101,9 @@ impl HighlightFilter for HighlightFilterVariants{
                         Vec::new()
                     }
                 }
+            },
+            HighlightFilterVariants::Empty =>{
+                Vec::new()
             }
         }
     }
@@ -110,8 +114,8 @@ impl HighlightFilter for HighlightFilterVariants{
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
 pub struct CombinedHighlightFilter{
-    operator:Operator,
-    filters:Vec<HighlightFilterVariants>
+    pub operator:Operator,
+    pub filters:Vec<HighlightFilterVariants>
 }
 
 impl CombinedHighlightFilter{

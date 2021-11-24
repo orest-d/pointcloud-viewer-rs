@@ -42,6 +42,13 @@ async fn main() -> Result<()> {
     let mut enable_column_selector = false;
     let mut column_selection = String::new();
     let mut enable_highlight = false;
+    let mut highlight_filter = CombinedHighlightFilter::new();
+    highlight_filter
+        .filters
+        .push(HighlightFilterVariants::Selection(
+            "a".to_owned(),
+            "b".to_owned(),
+        ));
 
     loop {
         //        clear_background(DARKBLUE);
@@ -322,6 +329,78 @@ async fn main() -> Result<()> {
                     .default_pos((2.0 * margin + size_x, 320.0))
                     .show(egui_ctx, |ui| {
                         egui::Grid::new("Coordinates grid").show(ui, |ui| {
+                            for (i, f) in highlight_filter.filters.iter_mut().enumerate() {
+                                match f {
+                                    HighlightFilterVariants::Selection(column, value) => {
+                                        ui.label("Value selection");
+                                        ui.end_row();
+                                        let mut highlight_column = column.to_string();
+                                        let mut highlight_value = value.to_owned();
+                                        egui::ComboBox::from_id_source(format!("Highlight {}", i))
+                                            .selected_text(column.to_string())
+                                            .show_ui(ui, |ui| {
+                                                ui.selectable_value(
+                                                    &mut highlight_column,
+                                                    "".to_string(),
+                                                    "",
+                                                );
+                                                for column in pipeline.point_data.headers.iter() {
+                                                    ui.selectable_value(
+                                                        &mut highlight_column,
+                                                        column.to_string(),
+                                                        column,
+                                                    );
+                                                }
+                                            });
+                                        egui::ComboBox::from_id_source(format!(
+                                            "Highlight value {}",
+                                            i
+                                        ))
+                                        .selected_text(value.to_string())
+                                        .show_ui(
+                                            ui,
+                                            |ui| {
+                                                ui.selectable_value(
+                                                    &mut highlight_value,
+                                                    "".to_string(),
+                                                    "",
+                                                );
+                                                for value in pipeline.highlightable_values.iter() {
+                                                    ui.selectable_value(
+                                                        &mut highlight_value,
+                                                        value.to_string(),
+                                                        value,
+                                                    );
+                                                }
+                                            },
+                                        );
+                                        *f = HighlightFilterVariants::Selection(
+                                            highlight_column,
+                                            highlight_value,
+                                        );
+                                        if ui.button("X").clicked(){
+                                            *f = HighlightFilterVariants::Empty;
+                                        }
+                                        ui.end_row();
+                                        ui.separator();
+                                        ui.end_row();
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            if ui.button("Selected value").clicked() {
+                                highlight_filter.filters.push(HighlightFilterVariants::Selection("".to_string(),"".to_string()))
+                            }
+                            if ui.button("Less than").clicked() {
+                                highlight_filter.filters.push(HighlightFilterVariants::LessThan("".to_string(),0.0))
+                            }
+                            if ui.button("Greater than").clicked() {
+                                highlight_filter.filters.push(HighlightFilterVariants::GreaterThan("".to_string(),0.0))
+                            }
+                            if ui.button("Band").clicked() {
+                                highlight_filter.filters.push(HighlightFilterVariants::Band("".to_string(),0.0,0.0))
+                            }
+                            ui.end_row();
                             egui::ComboBox::from_label("Highlight")
                                 .selected_text(pipeline.highlight_column())
                                 .show_ui(ui, |ui| {
