@@ -1,159 +1,418 @@
 #![allow(dead_code)]
 use crate::column_filter::Operator;
 use crate::pointdata::PointData;
+use macroquad::prelude::*;
 //use std::cmp::Ordering::*;
 
-trait HighlightFilter{
+pub trait HighlightFilter {
     fn filter(&self, data: &PointData) -> Vec<bool>;
+    fn interface(&mut self, data: &PointData, ui: &mut egui::Ui);
 }
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
-pub enum HighlightFilterVariants{
+pub enum HighlightFilterVariants {
     Selection(String, String),
     GreaterThan(String, f64),
     LessThan(String, f64),
     Band(String, f64, f64),
-    Empty
+    Empty,
 }
 
-impl HighlightFilter for HighlightFilterVariants{
-    fn filter(&self, data: &PointData) -> Vec<bool>{
-        match self{
-            HighlightFilterVariants::Selection(column, value) =>{
-                if data.data.contains_key(column){
-                    if let Ok(value) = value.parse::<f64>(){
-                        data.data[column].iter().map(|x| *x==value).collect()
-                    }
-                    else{
+impl HighlightFilterVariants {
+    fn delete_button(&mut self, ui: &mut egui::Ui) {
+        if ui.button("X").clicked() {
+            *self = HighlightFilterVariants::Empty;
+        }
+    }
+
+    fn threshold_ui(
+        less: bool,
+        column: &str,
+        value: f64,
+        data: &PointData,
+        ui: &mut egui::Ui,
+    ) -> (bool, String, f64) {
+        let is_less = if less {
+            !ui.button("<").clicked()
+        } else {
+            ui.button(">").clicked()
+        };
+
+        let mut highlight_column = column.to_string();
+        let mut highlight_value = value;
+        egui::ComboBox::from_id_source(format!("Highlight column Selection({},{})", column, value))
+            .selected_text(column.to_string())
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut highlight_column, "".to_string(), "");
+                for column in data.headers.iter() {
+                    ui.selectable_value(&mut highlight_column, column.to_string(), column);
+                }
+            });
+        ui.add(egui::Slider::new(&mut highlight_value, -1.0..=1.0));
+        (is_less, highlight_column, highlight_value)
+    }
+}
+
+impl HighlightFilter for HighlightFilterVariants {
+    fn filter(&self, data: &PointData) -> Vec<bool> {
+        match self {
+            HighlightFilterVariants::Selection(column, value) => {
+                if data.data.contains_key(column) {
+                    if let Ok(value) = value.parse::<f64>() {
+                        data.data[column].iter().map(|x| *x == value).collect()
+                    } else {
                         Vec::new()
                     }
-                }
-                else{
-                    if data.aux.contains_key(column){
-                        data.aux[column].iter().map(|x| x==value).collect()
-                    }
-                    else{
-                        Vec::new()
-                    }
-                }
-            },
-            HighlightFilterVariants::LessThan(column, value) =>{
-                if data.data.contains_key(column){
-                    data.data[column].iter().map(|x| *x<*value).collect()
-                }
-                else{
-                    if data.aux.contains_key(column){
-                        data.aux[column].iter().map(|x| {
-                            if let Ok(x)=x.parse::<f64>(){
-                                x<*value
-                            }
-                            else{
-                                false
-                            }
-                        }).collect()
-                    }
-                    else{
-                        Vec::new()
-                    }
-                }
-            },
-            HighlightFilterVariants::GreaterThan(column, value) =>{
-                if data.data.contains_key(column){
-                    data.data[column].iter().map(|x| *x>*value).collect()
-                }
-                else{
-                    if data.aux.contains_key(column){
-                        data.aux[column].iter().map(|x| {
-                            if let Ok(x)=x.parse::<f64>(){
-                                x>*value
-                            }
-                            else{
-                                false
-                            }
-                        }).collect()
-                    }
-                    else{
+                } else {
+                    if data.aux.contains_key(column) {
+                        data.aux[column].iter().map(|x| x == value).collect()
+                    } else {
                         Vec::new()
                     }
                 }
             }
-            HighlightFilterVariants::Band(column, value, width) =>{
-                if data.data.contains_key(column){
-                    data.data[column].iter().map(|x| {(*x>=(*value-0.5*width)) && (*x<=(*value+0.5*width))}).collect()
-                }
-                else{
-                    if data.aux.contains_key(column){
-                        if data.aux.contains_key(column){
-                            data.aux[column].iter().map(|x| {
-                                if let Ok(x)=x.parse::<f64>(){
-                                    (x>=(*value-0.5*width)) && (x<=(*value+0.5*width))
-                                }
-                                else{
+            HighlightFilterVariants::LessThan(column, value) => {
+                if data.data.contains_key(column) {
+                    data.data[column].iter().map(|x| *x < *value).collect()
+                } else {
+                    if data.aux.contains_key(column) {
+                        data.aux[column]
+                            .iter()
+                            .map(|x| {
+                                if let Ok(x) = x.parse::<f64>() {
+                                    x < *value
+                                } else {
                                     false
                                 }
-                            }).collect()
-                        }
-                        else{
-                            Vec::new()
-                        }
-                    }
-                    else{
+                            })
+                            .collect()
+                    } else {
                         Vec::new()
                     }
                 }
-            },
-            HighlightFilterVariants::Empty =>{
-                Vec::new()
             }
+            HighlightFilterVariants::GreaterThan(column, value) => {
+                if data.data.contains_key(column) {
+                    data.data[column].iter().map(|x| *x > *value).collect()
+                } else {
+                    if data.aux.contains_key(column) {
+                        data.aux[column]
+                            .iter()
+                            .map(|x| {
+                                if let Ok(x) = x.parse::<f64>() {
+                                    x > *value
+                                } else {
+                                    false
+                                }
+                            })
+                            .collect()
+                    } else {
+                        Vec::new()
+                    }
+                }
+            }
+            HighlightFilterVariants::Band(column, value, width) => {
+                if data.data.contains_key(column) {
+                    data.data[column]
+                        .iter()
+                        .map(|x| (*x >= (*value - 0.5 * width)) && (*x <= (*value + 0.5 * width)))
+                        .collect()
+                } else {
+                    if data.aux.contains_key(column) {
+                        if data.aux.contains_key(column) {
+                            data.aux[column]
+                                .iter()
+                                .map(|x| {
+                                    if let Ok(x) = x.parse::<f64>() {
+                                        (x >= (*value - 0.5 * width))
+                                            && (x <= (*value + 0.5 * width))
+                                    } else {
+                                        false
+                                    }
+                                })
+                                .collect()
+                        } else {
+                            Vec::new()
+                        }
+                    } else {
+                        Vec::new()
+                    }
+                }
+            }
+            HighlightFilterVariants::Empty => Vec::new(),
         }
     }
-}    
 
-
-
+    fn interface(&mut self, data: &PointData, ui: &mut egui::Ui) {
+        match self {
+            HighlightFilterVariants::Selection(column, value) => {
+                ui.label("Value selection");
+                ui.end_row();
+                let mut highlight_column = column.to_string();
+                let mut highlight_value = value.to_owned();
+                egui::ComboBox::from_id_source(format!(
+                    "Highlight column Selection({},{})",
+                    column, value
+                ))
+                .selected_text(column.to_string())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut highlight_column, "".to_string(), "");
+                    for column in data.headers.iter() {
+                        ui.selectable_value(&mut highlight_column, column.to_string(), column);
+                    }
+                });
+                egui::ComboBox::from_id_source(format!(
+                    "Highlight value Selection({},{})",
+                    column, value
+                ))
+                .selected_text(value.to_string())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut highlight_value, "".to_string(), "");
+                    for value in data.unique_values(&column).iter() {
+                        ui.selectable_value(&mut highlight_value, value.to_string(), value);
+                    }
+                });
+                self.delete_button(ui);
+            }
+            HighlightFilterVariants::LessThan(column, value) => {
+                let (is_less, new_column, new_value) = HighlightFilterVariants::threshold_ui(
+                    true,
+                    &column.to_string(),
+                    *value,
+                    data,
+                    ui,
+                );
+                *self = if is_less {
+                    HighlightFilterVariants::LessThan(new_column, new_value)
+                }
+                else{
+                    HighlightFilterVariants::GreaterThan(new_column, new_value)
+                };
+                self.delete_button(ui);
+            }
+            HighlightFilterVariants::GreaterThan(column, value) => {
+                let (is_less, new_column, new_value) = HighlightFilterVariants::threshold_ui(
+                    false,
+                    &column.to_string(),
+                    *value,
+                    data,
+                    ui,
+                );
+                *self = if is_less {
+                    HighlightFilterVariants::LessThan(new_column, new_value)
+                }
+                else{
+                    HighlightFilterVariants::GreaterThan(new_column, new_value)
+                };
+                self.delete_button(ui);
+            }
+            HighlightFilterVariants::Band(column, value, width) => {}
+            HighlightFilterVariants::Empty => {}
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
-pub struct CombinedHighlightFilter{
-    pub operator:Operator,
-    pub filters:Vec<HighlightFilterVariants>
+pub struct CombinedHighlightFilter {
+    pub operator: Operator,
+    pub filters: Vec<HighlightFilterVariants>,
 }
 
-impl CombinedHighlightFilter{
-    pub fn new()->Self{
-        CombinedHighlightFilter{
-            operator:Operator::And,
-            filters:Vec::new()
+impl CombinedHighlightFilter {
+    pub fn new() -> Self {
+        CombinedHighlightFilter {
+            operator: Operator::And,
+            filters: Vec::new(),
+        }
+    }
+    fn tidy(&mut self) {
+        let mut i = 0;
+        while i < self.filters.len() {
+            if self.filters[i] == HighlightFilterVariants::Empty {
+                self.filters.remove(i);
+            } else {
+                i += 1;
+            }
         }
     }
 }
 
-impl HighlightFilter for CombinedHighlightFilter{
-    fn filter(&self, data: &PointData) -> Vec<bool>{
-        match self.operator{
+impl HighlightFilter for CombinedHighlightFilter {
+    fn filter(&self, data: &PointData) -> Vec<bool> {
+        match self.operator {
             Operator::And => {
-                if self.filters.is_empty(){
+                if self.filters.is_empty() {
                     Vec::new()
-                }
-                else{
+                } else {
                     let mut acc = self.filters[0].filter(data);
-                    for f in self.filters.iter().skip(1){
-                        acc = acc.iter().zip(f.filter(data).iter()).map(|(a,b)| *a && *b).collect::<Vec<bool>>();
+                    for f in self.filters.iter().skip(1) {
+                        acc = acc
+                            .iter()
+                            .zip(f.filter(data).iter())
+                            .map(|(a, b)| *a && *b)
+                            .collect::<Vec<bool>>();
                     }
                     acc
                 }
-            },
-            Operator::Or=>{
-                if self.filters.is_empty(){
+            }
+            Operator::Or => {
+                if self.filters.is_empty() {
                     Vec::new()
-                }
-                else{
+                } else {
                     let mut acc = self.filters[0].filter(data);
-                    for f in self.filters.iter().skip(1){
-                        acc = acc.iter().zip(f.filter(data).iter()).map(|(a,b)| *a || *b).collect::<Vec<bool>>();
+                    for f in self.filters.iter().skip(1) {
+                        acc = acc
+                            .iter()
+                            .zip(f.filter(data).iter())
+                            .map(|(a, b)| *a || *b)
+                            .collect::<Vec<bool>>();
                     }
                     acc
                 }
             }
         }
     }
+    fn interface(&mut self, data: &PointData, ui: &mut egui::Ui) {
+        for f in self.filters.iter_mut() {
+            f.interface(data, ui);
+        }
+        self.tidy();
+    }
 }
+
+/*
+
+if enable_highlight {
+    egui::Window::new("Highlight Settings")
+        .default_pos((2.0 * margin + size_x, 320.0))
+        .show(egui_ctx, |ui| {
+            egui::Grid::new("Coordinates grid").show(ui, |ui| {
+                for (i, f) in highlight_filter.filters.iter_mut().enumerate() {
+                    match f {
+                        HighlightFilterVariants::Selection(column, value) => {
+                            ui.label("Value selection");
+                            ui.end_row();
+                            let mut highlight_column = column.to_string();
+                            let mut highlight_value = value.to_owned();
+                            egui::ComboBox::from_id_source(format!("Highlight {}", i))
+                                .selected_text(column.to_string())
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(
+                                        &mut highlight_column,
+                                        "".to_string(),
+                                        "",
+                                    );
+                                    for column in pipeline.point_data.headers.iter() {
+                                        ui.selectable_value(
+                                            &mut highlight_column,
+                                            column.to_string(),
+                                            column,
+                                        );
+                                    }
+                                });
+                            egui::ComboBox::from_id_source(format!(
+                                "Highlight value {}",
+                                i
+                            ))
+                            .selected_text(value.to_string())
+                            .show_ui(
+                                ui,
+                                |ui| {
+                                    ui.selectable_value(
+                                        &mut highlight_value,
+                                        "".to_string(),
+                                        "",
+                                    );
+                                    for value in pipeline.highlightable_values.iter() {
+                                        ui.selectable_value(
+                                            &mut highlight_value,
+                                            value.to_string(),
+                                            value,
+                                        );
+                                    }
+                                },
+                            );
+                            *f = HighlightFilterVariants::Selection(
+                                highlight_column,
+                                highlight_value,
+                            );
+                            if ui.button("X").clicked(){
+                                *f = HighlightFilterVariants::Empty;
+                            }
+                            ui.end_row();
+                            ui.separator();
+                            ui.end_row();
+                        }
+                        _ => {}
+                    }
+                }
+                if ui.button("Selected value").clicked() {
+                    highlight_filter.filters.push(HighlightFilterVariants::Selection("".to_string(),"".to_string()))
+                }
+                if ui.button("Less than").clicked() {
+                    highlight_filter.filters.push(HighlightFilterVariants::LessThan("".to_string(),0.0))
+                }
+                if ui.button("Greater than").clicked() {
+                    highlight_filter.filters.push(HighlightFilterVariants::GreaterThan("".to_string(),0.0))
+                }
+                if ui.button("Band").clicked() {
+                    highlight_filter.filters.push(HighlightFilterVariants::Band("".to_string(),0.0,0.0))
+                }
+                ui.end_row();
+                egui::ComboBox::from_label("Highlight")
+                    .selected_text(pipeline.highlight_column())
+                    .show_ui(ui, |ui| {
+                        let mut highlight_column =
+                            pipeline.highlight_column().to_owned();
+                        ui.selectable_value(&mut highlight_column, "".to_string(), "");
+                        for column in pipeline.point_data.headers.iter() {
+                            ui.selectable_value(
+                                &mut highlight_column,
+                                column.to_string(),
+                                column,
+                            );
+                        }
+                        pipeline.set_highlight_column(highlight_column);
+                    });
+                egui::ComboBox::from_label("Value")
+                    .selected_text(pipeline.highlight_value())
+                    .show_ui(ui, |ui| {
+                        let mut highlight_value = pipeline.highlight_value().to_owned();
+                        ui.selectable_value(&mut highlight_value, "".to_string(), "");
+                        for value in pipeline.highlightable_values.iter() {
+                            ui.selectable_value(
+                                &mut highlight_value,
+                                value.to_string(),
+                                value,
+                            );
+                        }
+                        pipeline.set_highlight_value(highlight_value);
+                    });
+                ui.end_row();
+                let mut highlight_type = pipeline.highlight_type();
+                ui.radio_value(
+                    &mut highlight_type,
+                    HighlightType::Highlight,
+                    "Highlight",
+                );
+                ui.radio_value(
+                    &mut highlight_type,
+                    HighlightType::NoHighlight,
+                    "No highlight",
+                );
+                ui.end_row();
+                ui.radio_value(
+                    &mut highlight_type,
+                    HighlightType::HighlighedOnly,
+                    "Highlighted only",
+                );
+                ui.radio_value(
+                    &mut highlight_type,
+                    HighlightType::NonHighlightedOnly,
+                    "Non-highlighted only",
+                );
+                pipeline.set_highlight_type(highlight_type);
+            });
+        });
+}
+*/

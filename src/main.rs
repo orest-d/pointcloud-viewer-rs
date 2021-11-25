@@ -329,6 +329,8 @@ async fn main() -> Result<()> {
                     .default_pos((2.0 * margin + size_x, 320.0))
                     .show(egui_ctx, |ui| {
                         egui::Grid::new("Coordinates grid").show(ui, |ui| {
+
+                            /*
                             for (i, f) in highlight_filter.filters.iter_mut().enumerate() {
                                 match f {
                                     HighlightFilterVariants::Selection(column, value) => {
@@ -374,6 +376,7 @@ async fn main() -> Result<()> {
                                                 }
                                             },
                                         );
+                                        /*
                                         *f = HighlightFilterVariants::Selection(
                                             highlight_column,
                                             highlight_value,
@@ -381,6 +384,7 @@ async fn main() -> Result<()> {
                                         if ui.button("X").clicked(){
                                             *f = HighlightFilterVariants::Empty;
                                         }
+                                        */
                                         ui.end_row();
                                         ui.separator();
                                         ui.end_row();
@@ -430,6 +434,8 @@ async fn main() -> Result<()> {
                                     }
                                     pipeline.set_highlight_value(highlight_value);
                                 });
+                            */
+                            highlight_filter.interface(&pipeline.point_data, ui);
                             ui.end_row();
                             let mut highlight_type = pipeline.highlight_type();
                             ui.radio_value(

@@ -3,6 +3,7 @@
 use anyhow::Result;
 use csv;
 use std::collections::HashMap;
+use std::collections::BTreeSet;
 use std::f64::consts::PI;
 
 pub struct PointData {
@@ -40,6 +41,30 @@ impl PointData {
             }
         }
     }
+
+    pub fn unique_values(&self, column:&str)->Vec<String> {
+        let mut set = BTreeSet::new();
+        if self.aux.contains_key(column){
+            let data = &self.aux[column];
+            for key in data.iter(){
+                set.insert(key.to_string());
+                if set.len()>=100{
+                    break;
+                }
+            }
+        }
+        if self.data.contains_key(column){
+            let data = &self.data[column];
+            for key in data.iter(){
+                set.insert(format!("{}",key));
+                if set.len()>=100{
+                    break;
+                }
+            }
+        }
+        set.iter().map(|x| x.to_owned()).collect()
+    }
+    
     pub fn with_data_column(&mut self, column: &str) -> &mut Self {
         self.headers.push(column.to_owned());
         self.all_headers.push(column.to_owned());
