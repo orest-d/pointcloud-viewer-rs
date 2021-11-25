@@ -275,8 +275,23 @@ impl HighlightFilter for CombinedHighlightFilter {
     fn interface(&mut self, data: &PointData, ui: &mut egui::Ui) {
         for f in self.filters.iter_mut() {
             f.interface(data, ui);
+            ui.end_row();
         }
         self.tidy();
+        if ui.button("=").clicked() {
+            self.filters.push(HighlightFilterVariants::Selection("".to_string(),"".to_string()))
+        }
+        if ui.button("<").clicked() {
+            self.filters.push(HighlightFilterVariants::LessThan("".to_string(),0.0))
+        }
+        if ui.button(">").clicked() {
+            self.filters.push(HighlightFilterVariants::GreaterThan("".to_string(),0.0))
+        }
+        if ui.button("Band").clicked() {
+            self.filters.push(HighlightFilterVariants::Band("".to_string(),0.0,0.0))
+        }
+        ui.end_row();
+
     }
 }
 
