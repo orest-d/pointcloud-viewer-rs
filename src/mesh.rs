@@ -569,8 +569,9 @@ impl Mesh {
         let normalization=1.0/(5.0f64.atan());
         for i in 0..mesh.len() {
             let x = mesh[i]*linear_brightness;
-            let x = if x<0.0 {0.0} else {x.atan()*normalization};
+            let x = if x<0.0 {0.0} else {x};
             let x = x.powf(contrast);
+            let x = x.atan()*normalization;
             mesh[i] = x;
         }
     }

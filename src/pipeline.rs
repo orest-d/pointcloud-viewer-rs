@@ -4,7 +4,6 @@ use crate::pointdata::*;
 use anyhow::*;
 use macroquad::prelude::*;
 use std::convert::TryInto;
-use std::collections::btree_set::*;
 use std::str::FromStr;
 use crate::mesh::HighlightType;
 use crate::transform::*;
