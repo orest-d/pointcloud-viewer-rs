@@ -43,12 +43,6 @@ async fn main() -> Result<()> {
     let mut column_selection = String::new();
     let mut enable_highlight = false;
     let mut highlight_filter = CombinedHighlightFilter::new();
-    highlight_filter
-        .filters
-        .push(HighlightFilterVariants::Selection(
-            "a".to_owned(),
-            "b".to_owned(),
-        ));
 
     loop {
         //        clear_background(DARKBLUE);
@@ -185,6 +179,7 @@ async fn main() -> Result<()> {
                                 pipeline.set_weight_column(weight_column);
                             });
                         ui.end_row();
+                        /*
                         egui::ComboBox::from_label("Highlight")
                             .selected_text(pipeline.highlight_column())
                             .show_ui(ui, |ui| {
@@ -199,7 +194,6 @@ async fn main() -> Result<()> {
                                 }
                                 pipeline.set_highlight_column(highlight_column);
                             });
-                            /*
                         egui::ComboBox::from_label("Value")
                             .selected_text(pipeline.highlight_value())
                             .show_ui(ui, |ui| {
@@ -214,43 +208,45 @@ async fn main() -> Result<()> {
                                 }
                                 pipeline.set_highlight_value(highlight_value);
                             });
+                            ui.end_row();
+                            let mut highlight_type = pipeline.highlight_type();
+                            ui.radio_value(&mut highlight_type, HighlightType::Highlight, "Highlight");
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::NoHighlight,
+                                "No highlight",
+                            );
+                            ui.end_row();
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::HighlighedOnly,
+                                "Highlighted only",
+                            );
+                            ui.radio_value(
+                                &mut highlight_type,
+                                HighlightType::NonHighlightedOnly,
+                                "Non-highlighted only",
+                            );
+                            pipeline.set_highlight_type(highlight_type);
                             */
-                        ui.end_row();
-                        let mut highlight_type = pipeline.highlight_type();
-                        ui.radio_value(&mut highlight_type, HighlightType::Highlight, "Highlight");
-                        ui.radio_value(
-                            &mut highlight_type,
-                            HighlightType::NoHighlight,
-                            "No highlight",
-                        );
-                        ui.end_row();
-                        ui.radio_value(
-                            &mut highlight_type,
-                            HighlightType::HighlighedOnly,
-                            "Highlighted only",
-                        );
-                        ui.radio_value(
-                            &mut highlight_type,
-                            HighlightType::NonHighlightedOnly,
-                            "Non-highlighted only",
-                        );
-                        pipeline.set_highlight_type(highlight_type);
+                            let mut gaussian_points = pipeline.gaussian_points();
+                            ui.checkbox(&mut gaussian_points, "Gaussian points");
+                            pipeline.set_gaussian_points(gaussian_points);
+        
+                            let mut point_sigma = pipeline.point_sigma();
+                            ui.add(egui::Slider::new(&mut point_sigma, 0.0..=10.0));
+                            pipeline.set_point_sigma(point_sigma);
+       
+                            ui.end_row();
+                            ui.label("Brighthess:");
+                            let mut density_multiplier = pipeline.density_multiplier();
+                            ui.add(egui::Slider::new(&mut density_multiplier, -3.0..=3.0));
+                            pipeline.set_density_multiplier(density_multiplier);
+                            ui.end_row();
+        
+                            ui.checkbox(&mut enable_statistics, "Enable statistics");
                     });
 
-                    let mut gaussian_points = pipeline.gaussian_points();
-                    ui.checkbox(&mut gaussian_points, "Gaussian points");
-                    pipeline.set_gaussian_points(gaussian_points);
-
-                    let mut point_sigma = pipeline.point_sigma();
-                    ui.add(egui::Slider::new(&mut point_sigma, 0.0..=10.0));
-                    pipeline.set_point_sigma(point_sigma);
-
-                    ui.label("Brighthess:");
-                    let mut density_multiplier = pipeline.density_multiplier();
-                    ui.add(egui::Slider::new(&mut density_multiplier, -3.0..=3.0));
-                    pipeline.set_density_multiplier(density_multiplier);
-
-                    ui.checkbox(&mut enable_statistics, "Enable statistics");
                     //                    dbg!(&ui.input().pointer.hover_pos());
                 });
             egui::Window::new("Data")

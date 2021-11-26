@@ -5,7 +5,7 @@ use bitvector::*;
 use macroquad::prelude::*;
 //use std::cmp::Ordering::*;
 
-const BAND:&str = "↔";
+const BAND: &str = "↔";
 
 pub trait HighlightFilter {
     fn filter(&self, data: &PointData) -> BitVector;
@@ -28,6 +28,34 @@ impl HighlightFilterVariants {
         }
     }
 
+    fn selection_ui(
+        column: &str,
+        value: &str,
+        data: &PointData,
+        ui: &mut egui::Ui,
+        id: usize,
+    ) -> (String, String) {
+        ui.label("=");
+        let mut highlight_column = column.to_string();
+        let mut highlight_value = value.to_owned();
+        egui::ComboBox::from_id_source(format!("Highlight column Selection {}", id))
+            .selected_text(column.to_string())
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut highlight_column, "".to_string(), "");
+                for column in data.headers.iter() {
+                    ui.selectable_value(&mut highlight_column, column.to_string(), column);
+                }
+            });
+        egui::ComboBox::from_id_source(format!("Highlight value Selection {}", id))
+            .selected_text(value.to_string())
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut highlight_value, "".to_string(), "");
+                for value in data.unique_values(&column).iter() {
+                    ui.selectable_value(&mut highlight_value, value.to_string(), value);
+                }
+            });
+        (highlight_column, highlight_value)
+    }
     fn threshold_ui(
         less: bool,
         column: &str,
@@ -81,16 +109,20 @@ impl HighlightFilterVariants {
         ui.end_row();
         ui.label("");
         ui.label("Width:");
-        ui.add(egui::DragValue::new(&mut highlight_width).speed(0.1).clamp_range(0.0..=f64::MAX));
+        ui.add(
+            egui::DragValue::new(&mut highlight_width)
+                .speed(0.1)
+                .clamp_range(0.0..=f64::MAX),
+        );
 
         (highlight_column, highlight_value, highlight_width)
     }
-
 }
 
 impl HighlightFilter for HighlightFilterVariants {
     fn filter(&self, data: &PointData) -> BitVector {
         let mut bv = BitVector::new(data.len());
+        //        println!(" filter {:?} BV:{} DATA:{}",self, bv.capacity(), data.len());
         match self {
             HighlightFilterVariants::Selection(column, value) => {
                 if data.data.contains_key(column) {
@@ -170,31 +202,15 @@ impl HighlightFilter for HighlightFilterVariants {
             }
             HighlightFilterVariants::Empty => {}
         }
+        //       println!(" - return {:?} BV:{} DATA:{}",self,bv.capacity(),data.len());
         bv
     }
 
     fn interface(&mut self, data: &PointData, ui: &mut egui::Ui, id: usize) {
         match self {
             HighlightFilterVariants::Selection(column, value) => {
-                ui.label("=");
-                let mut highlight_column = column.to_string();
-                let mut highlight_value = value.to_owned();
-                egui::ComboBox::from_id_source(format!("Highlight column Selection {}", id))
-                    .selected_text(column.to_string())
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut highlight_column, "".to_string(), "");
-                        for column in data.headers.iter() {
-                            ui.selectable_value(&mut highlight_column, column.to_string(), column);
-                        }
-                    });
-                egui::ComboBox::from_id_source(format!("Highlight value Selection {}", id))
-                    .selected_text(value.to_string())
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut highlight_value, "".to_string(), "");
-                        for value in data.unique_values(&column).iter() {
-                            ui.selectable_value(&mut highlight_value, value.to_string(), value);
-                        }
-                    });
+                let (new_column, new_value) = HighlightFilterVariants::selection_ui(column, value, data, ui, id);
+                *self = HighlightFilterVariants::Selection(new_column, new_value);
                 self.delete_button(ui);
             }
             HighlightFilterVariants::LessThan(column, value) => {
@@ -275,16 +291,19 @@ impl HighlightFilter for CombinedHighlightFilter {
     fn filter(&self, data: &PointData) -> BitVector {
         match self.operator {
             Operator::And => {
-                let mut bv = BitVector::ones(data.len());
+                let mut bv = BitVector::new(data.len());
+                for i in 0..data.len() {
+                    bv.insert(i);
+                }
                 for f in self.filters.iter() {
-                    bv &= f.filter(data);
+                    bv.intersection_inplace(&f.filter(data));
                 }
                 bv
             }
             Operator::Or => {
                 let mut bv = BitVector::new(data.len());
                 for f in self.filters.iter() {
-                    bv |= f.filter(data);
+                    bv.union_inplace(&f.filter(data));
                 }
                 bv
             }
@@ -317,17 +336,17 @@ impl HighlightFilter for CombinedHighlightFilter {
                     .push(HighlightFilterVariants::Band("".to_string(), 0.0, 0.0))
             }
         });
-        ui.horizontal(|ui|{
+        ui.horizontal(|ui| {
             ui.label("Operator: ");
-            match self.operator{
-                Operator::And =>{
-                    if ui.button("AND").clicked(){
-                        self.operator=Operator::Or;
+            match self.operator {
+                Operator::And => {
+                    if ui.button("AND").clicked() {
+                        self.operator = Operator::Or;
                     }
-                },
-                Operator::Or =>{
-                    if ui.button("OR").clicked(){
-                        self.operator=Operator::And;
+                }
+                Operator::Or => {
+                    if ui.button("OR").clicked() {
+                        self.operator = Operator::And;
                     }
                 }
             }
@@ -335,4 +354,3 @@ impl HighlightFilter for CombinedHighlightFilter {
         ui.end_row();
     }
 }
-
