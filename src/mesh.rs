@@ -13,8 +13,8 @@ pub struct Parameters {
     pub xcolumn: String,
     pub ycolumn: String,
     pub weight_column: String,
-    pub highlight_column: String,
-    pub highlight_value: String,
+//    pub highlight_column: String,
+//    pub highlight_value: String,
     pub highlight_type: HighlightType,
     pub mesh_width: usize,
     pub mesh_height: usize,
@@ -25,6 +25,7 @@ pub struct Parameters {
     pub gaussian_points: bool,
     pub point_sigma: f64,
     pub density_multiplier: f64,
+    pub contrast: f64,
 }
 
 impl Parameters {
@@ -33,8 +34,8 @@ impl Parameters {
             xcolumn: "".into(),
             ycolumn: "".into(),
             weight_column: "".into(),
-            highlight_column: "".into(),
-            highlight_value: "".into(),
+//            highlight_column: "".into(),
+//            highlight_value: "".into(),
             highlight_type: HighlightType::Highlight,
             mesh_width: 780,
             mesh_height: 780,
@@ -45,6 +46,7 @@ impl Parameters {
             gaussian_points: false,
             point_sigma: 1.0,
             density_multiplier: 0.0,
+            contrast: 1.0,
         }
     }
 
@@ -548,7 +550,7 @@ impl Mesh {
         }
     }
 
-    fn atan_clamp_mesh(mesh: &mut Vec<f64>, brightness:f64) {
+    fn atan_clamp_mesh(mesh: &mut Vec<f64>, brightness:f64, contrast:f64) {
         let mut sum=0.0f64;
         let mut count=1.0;
         for &value in mesh.iter() {
@@ -567,14 +569,16 @@ impl Mesh {
         let normalization=1.0/(5.0f64.atan());
         for i in 0..mesh.len() {
             let x = mesh[i]*linear_brightness;
-            mesh[i] = x.atan()*normalization;
+            let x = if x<0.0 {0.0} else {x.atan()*normalization};
+            let x = x.powf(contrast);
+            mesh[i] = x;
         }
     }
-    pub fn clamp_processed_mesh(&mut self, brightness:f64) {
-        Self::atan_clamp_mesh(&mut self.processed_mesh, brightness);
+    pub fn clamp_processed_mesh(&mut self, brightness:f64, contrast: f64) {
+        Self::atan_clamp_mesh(&mut self.processed_mesh, brightness, contrast);
     }
-    pub fn clamp_processed_highlight_mesh(&mut self, brightness:f64) {
-        Self::atan_clamp_mesh(&mut self.processed_highlight_mesh, brightness);
+    pub fn clamp_processed_highlight_mesh(&mut self, brightness:f64, contrast: f64) {
+        Self::atan_clamp_mesh(&mut self.processed_highlight_mesh, brightness, contrast);
     }
 
     pub fn normalize_processed_mesh(&mut self) {

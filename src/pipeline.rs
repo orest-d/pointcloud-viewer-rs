@@ -289,54 +289,14 @@ impl Pipeline {
             self.stage = Stage::Stage0NewData;
         }
     }
+    /*
     pub fn highlight_column(&self) -> &str{
         &self.parameters.highlight_column
     }
+    */
     pub fn set_highlights(&mut self, new_highlights:BitVector){
         if self.highlights != new_highlights{
             self.highlights = new_highlights;
-            self.stage = Stage::Stage0NewData;
-        }
-    }
-    pub fn set_highlight_column(&mut self, column:String){
-        if self.parameters.highlight_column != column {
-            self.parameters.highlight_column = column;
-//            self.highlightable_values.clear();
-            if self.parameters.highlight_column!=""{
-                let mut set = BTreeSet::new();
-                if self.point_data.aux.contains_key(&self.parameters.highlight_column){
-                    let data = &self.point_data.aux[&self.parameters.highlight_column];
-                    for key in data.iter(){
-                        set.insert(key.to_string());
-                        if set.len()>=100{
-                            break;
-                        }
-                    }
-                }
-                if self.point_data.data.contains_key(&self.parameters.highlight_column){
-                    let data = &self.point_data.data[&self.parameters.highlight_column];
-                    for key in data.iter(){
-                        set.insert(format!("{}",key));
-                        if set.len()>=100{
-                            break;
-                        }
-                    }
-                }
-                /*
-                for key in set.iter(){
-                    self.highlightable_values.push(key.to_string());
-                }
-                */
-            }
-            self.stage = Stage::Stage0NewData;
-        }
-    }
-    pub fn highlight_value(&self) -> &str{
-        &self.parameters.highlight_value
-    }
-    pub fn set_highlight_value(&mut self, value:String){
-        if self.parameters.highlight_value != value {
-            self.parameters.highlight_value = value;
             self.stage = Stage::Stage0NewData;
         }
     }
@@ -416,6 +376,15 @@ impl Pipeline {
         if self.parameters.density_multiplier != value{
             self.stage = self.stage.down(Stage::Stage2Mesh);
             self.parameters.density_multiplier = value;
+        }
+    }
+    pub fn contrast(&self) -> f64 {
+        self.parameters.contrast
+    }
+    pub fn set_contrast(&mut self, value: f64){
+        if self.parameters.contrast != value{
+            self.stage = self.stage.down(Stage::Stage2Mesh);
+            self.parameters.contrast = value;
         }
     }
 
@@ -605,32 +574,32 @@ impl Pipeline {
                 self.mesh.to_processed_mesh();
                 //self.mesh.normalize_processed_mesh();
                 //self.mesh.multiply_processed_mesh(self.density_multiplier());
-                self.mesh.clamp_processed_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_mesh(self.density_multiplier(), self.contrast());
         
                 self.mesh.to_processed_highlight_mesh();
                 //self.mesh.normalize_processed_highlight_mesh();
                 //self.mesh.multiply_processed_highlight_mesh(self.density_multiplier());
-                self.mesh.clamp_processed_highlight_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_highlight_mesh(self.density_multiplier(), self.contrast());
             },
             HighlightType::NoHighlight =>{
                 self.mesh.to_processed_mesh_sum_highlight();
                 //self.mesh.normalize_processed_mesh();
                 //self.mesh.multiply_processed_mesh(self.density_multiplier());
-                self.mesh.clamp_processed_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_mesh(self.density_multiplier(), self.contrast());
             },
             HighlightType::HighlighedOnly =>{
                 //self.mesh.clean_processed_mesh();
                 self.mesh.to_processed_highlight_mesh();
                 //self.mesh.normalize_processed_highlight_mesh();
                 //self.mesh.multiply_processed_highlight_mesh(self.density_multiplier());
-                self.mesh.clamp_processed_highlight_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_highlight_mesh(self.density_multiplier(), self.contrast());
             }
             HighlightType::NonHighlightedOnly =>{
                 self.mesh.clean_processed_highlight_mesh();
                 self.mesh.to_processed_mesh();
                 //self.mesh.normalize_processed_mesh();
                 //self.mesh.multiply_processed_mesh(self.density_multiplier());
-                self.mesh.clamp_processed_mesh(self.density_multiplier());
+                self.mesh.clamp_processed_mesh(self.density_multiplier(), self.contrast());
             }
         }
         self.stage = Stage::Stage3ProcessedMesh;
