@@ -1,11 +1,12 @@
 #![allow(dead_code)]
 use crate::column_filter::Operator;
 use crate::pointdata::PointData;
+use bitvector::*;
 use macroquad::prelude::*;
 //use std::cmp::Ordering::*;
 
 pub trait HighlightFilter {
-    fn filter(&self, data: &PointData) -> Vec<bool>;
+    fn filter(&self, data: &PointData) -> BitVector;
     fn interface(&mut self, data: &PointData, ui: &mut egui::Ui);
 }
 
@@ -54,93 +55,88 @@ impl HighlightFilterVariants {
 }
 
 impl HighlightFilter for HighlightFilterVariants {
-    fn filter(&self, data: &PointData) -> Vec<bool> {
+    fn filter(&self, data: &PointData) -> BitVector {
+        let mut bv = BitVector::new(data.len());
         match self {
             HighlightFilterVariants::Selection(column, value) => {
                 if data.data.contains_key(column) {
                     if let Ok(value) = value.parse::<f64>() {
-                        data.data[column].iter().map(|x| *x == value).collect()
-                    } else {
-                        Vec::new()
+                        for (i, x) in data.data[column].iter().enumerate() {
+                            if *x == value {
+                                bv.insert(i);
+                            }
+                        }
                     }
                 } else {
                     if data.aux.contains_key(column) {
-                        data.aux[column].iter().map(|x| x == value).collect()
-                    } else {
-                        Vec::new()
+                        for (i, x) in data.aux[column].iter().enumerate() {
+                            if x == value {
+                                bv.insert(i);
+                            }
+                        }
                     }
                 }
             }
             HighlightFilterVariants::LessThan(column, value) => {
                 if data.data.contains_key(column) {
-                    data.data[column].iter().map(|x| *x < *value).collect()
+                    for (i, x) in data.data[column].iter().enumerate() {
+                        if *x < *value {
+                            bv.insert(i);
+                        }
+                    }
                 } else {
                     if data.aux.contains_key(column) {
-                        data.aux[column]
-                            .iter()
-                            .map(|x| {
-                                if let Ok(x) = x.parse::<f64>() {
-                                    x < *value
-                                } else {
-                                    false
+                        for (i, x) in data.aux[column].iter().enumerate() {
+                            if let Ok(x) = x.parse::<f64>() {
+                                if x < *value {
+                                    bv.insert(i);
                                 }
-                            })
-                            .collect()
-                    } else {
-                        Vec::new()
+                            }
+                        }
                     }
                 }
             }
             HighlightFilterVariants::GreaterThan(column, value) => {
                 if data.data.contains_key(column) {
-                    data.data[column].iter().map(|x| *x > *value).collect()
+                    for (i, x) in data.data[column].iter().enumerate() {
+                        if *x > *value {
+                            bv.insert(i);
+                        }
+                    }
                 } else {
                     if data.aux.contains_key(column) {
-                        data.aux[column]
-                            .iter()
-                            .map(|x| {
-                                if let Ok(x) = x.parse::<f64>() {
-                                    x > *value
-                                } else {
-                                    false
+                        for (i, x) in data.aux[column].iter().enumerate() {
+                            if let Ok(x) = x.parse::<f64>() {
+                                if x > *value {
+                                    bv.insert(i);
                                 }
-                            })
-                            .collect()
-                    } else {
-                        Vec::new()
+                            }
+                        }
                     }
                 }
             }
             HighlightFilterVariants::Band(column, value, width) => {
                 if data.data.contains_key(column) {
-                    data.data[column]
-                        .iter()
-                        .map(|x| (*x >= (*value - 0.5 * width)) && (*x <= (*value + 0.5 * width)))
-                        .collect()
+                    for (i, x) in data.data[column].iter().enumerate() {
+                        if *x >= *value - 0.5 * width && *x <= *value + 0.5 * width {
+                            bv.insert(i);
+                        }
+                    }
                 } else {
                     if data.aux.contains_key(column) {
-                        if data.aux.contains_key(column) {
-                            data.aux[column]
-                                .iter()
-                                .map(|x| {
-                                    if let Ok(x) = x.parse::<f64>() {
-                                        (x >= (*value - 0.5 * width))
-                                            && (x <= (*value + 0.5 * width))
-                                    } else {
-                                        false
-                                    }
-                                })
-                                .collect()
-                        } else {
-                            Vec::new()
+                        for (i, x) in data.aux[column].iter().enumerate() {
+                            if let Ok(x) = x.parse::<f64>() {
+                                if x >= *value - 0.5 * width && x <= *value + 0.5 * width {
+                                    bv.insert(i);
+                                }
+                            }
                         }
-                    } else {
-                        Vec::new()
                     }
                 }
             }
-            HighlightFilterVariants::Empty => Vec::new(),
+            HighlightFilterVariants::Empty => {}
         }
+        bv
     }
 
     fn interface(&mut self, data: &PointData, ui: &mut egui::Ui) {
@@ -184,8 +180,7 @@ impl HighlightFilter for HighlightFilterVariants {
                 );
                 *self = if is_less {
                     HighlightFilterVariants::LessThan(new_column, new_value)
-                }
-                else{
+                } else {
                     HighlightFilterVariants::GreaterThan(new_column, new_value)
                 };
                 self.delete_button(ui);
@@ -200,8 +195,7 @@ impl HighlightFilter for HighlightFilterVariants {
                 );
                 *self = if is_less {
                     HighlightFilterVariants::LessThan(new_column, new_value)
-                }
-                else{
+                } else {
                     HighlightFilterVariants::GreaterThan(new_column, new_value)
                 };
                 self.delete_button(ui);
@@ -238,37 +232,21 @@ impl CombinedHighlightFilter {
 }
 
 impl HighlightFilter for CombinedHighlightFilter {
-    fn filter(&self, data: &PointData) -> Vec<bool> {
+    fn filter(&self, data: &PointData) -> BitVector {
         match self.operator {
             Operator::And => {
-                if self.filters.is_empty() {
-                    Vec::new()
-                } else {
-                    let mut acc = self.filters[0].filter(data);
-                    for f in self.filters.iter().skip(1) {
-                        acc = acc
-                            .iter()
-                            .zip(f.filter(data).iter())
-                            .map(|(a, b)| *a && *b)
-                            .collect::<Vec<bool>>();
-                    }
-                    acc
+                let mut bv = BitVector::ones(data.len());
+                for f in self.filters.iter() {
+                    bv.intersection_inplace(&f.filter(data));
                 }
+                bv
             }
             Operator::Or => {
-                if self.filters.is_empty() {
-                    Vec::new()
-                } else {
-                    let mut acc = self.filters[0].filter(data);
-                    for f in self.filters.iter().skip(1) {
-                        acc = acc
-                            .iter()
-                            .zip(f.filter(data).iter())
-                            .map(|(a, b)| *a || *b)
-                            .collect::<Vec<bool>>();
-                    }
-                    acc
+                let mut bv = BitVector::new(data.len());
+                for f in self.filters.iter() {
+                    bv.union_inplace(&f.filter(data));
                 }
+                bv
             }
         }
     }
@@ -279,19 +257,24 @@ impl HighlightFilter for CombinedHighlightFilter {
         }
         self.tidy();
         if ui.button("=").clicked() {
-            self.filters.push(HighlightFilterVariants::Selection("".to_string(),"".to_string()))
+            self.filters.push(HighlightFilterVariants::Selection(
+                "".to_string(),
+                "".to_string(),
+            ))
         }
         if ui.button("<").clicked() {
-            self.filters.push(HighlightFilterVariants::LessThan("".to_string(),0.0))
+            self.filters
+                .push(HighlightFilterVariants::LessThan("".to_string(), 0.0))
         }
         if ui.button(">").clicked() {
-            self.filters.push(HighlightFilterVariants::GreaterThan("".to_string(),0.0))
+            self.filters
+                .push(HighlightFilterVariants::GreaterThan("".to_string(), 0.0))
         }
         if ui.button("Band").clicked() {
-            self.filters.push(HighlightFilterVariants::Band("".to_string(),0.0,0.0))
+            self.filters
+                .push(HighlightFilterVariants::Band("".to_string(), 0.0, 0.0))
         }
         ui.end_row();
-
     }
 }
 
