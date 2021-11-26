@@ -199,6 +199,7 @@ async fn main() -> Result<()> {
                                 }
                                 pipeline.set_highlight_column(highlight_column);
                             });
+                            /*
                         egui::ComboBox::from_label("Value")
                             .selected_text(pipeline.highlight_value())
                             .show_ui(ui, |ui| {
@@ -213,6 +214,7 @@ async fn main() -> Result<()> {
                                 }
                                 pipeline.set_highlight_value(highlight_value);
                             });
+                            */
                         ui.end_row();
                         let mut highlight_type = pipeline.highlight_type();
                         ui.radio_value(&mut highlight_type, HighlightType::Highlight, "Highlight");
@@ -331,7 +333,7 @@ async fn main() -> Result<()> {
                         egui::Grid::new("Highlight filter grid").show(ui, |ui| {
 
                             highlight_filter.interface(&pipeline.point_data, ui, 0);
-                            let h = highlight_filter.filter(&pipeline.point_data);
+                            pipeline.set_highlights(highlight_filter.filter(&pipeline.point_data));
                             ui.end_row();
                             ui.label("");
                             let mut highlight_type = pipeline.highlight_type();

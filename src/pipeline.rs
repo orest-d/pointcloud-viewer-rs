@@ -9,6 +9,7 @@ use std::str::FromStr;
 use crate::mesh::HighlightType;
 use crate::transform::*;
 use crate::measures::*;
+use bitvector::*;
 
 pub trait SimpleTable{
     fn transpose(&self)->Vec<Vec<String>>;
@@ -130,11 +131,11 @@ pub struct Pipeline {
     pub point_data: PointData,
     pub data_columns: Vec<String>,
     pub aux_columns: Vec<String>,
-    pub highlightable_values: Vec<String>,
+//    pub highlightable_values: Vec<String>,
     pub parameters: mesh::Parameters,
     pub mesh: mesh::Mesh,
     pub unit_weights: Vec<f64>,
-    pub highlights:Vec<bool>,
+    pub highlights:BitVector,
     pub xyi: Vec<(f64, f64, f64, usize, bool)>,
     pub txtype:TransformationType,
     pub tytype:TransformationType,
@@ -155,11 +156,11 @@ impl Pipeline {
             point_data: PointData::new(),
             data_columns: Vec::<_>::new(),
             aux_columns: Vec::<_>::new(),
-            highlightable_values: Vec::<_>::new(),
+//            highlightable_values: Vec::<_>::new(),
             parameters: mesh::Parameters::new(),
             mesh: mesh::Mesh::new(),
             unit_weights: Vec::<_>::new(),
-            highlights: Vec::<_>::new(),
+            highlights: BitVector::new(0),
             xyi: Vec::<_>::new(),
             txtype: TransformationType::Linear,
             tytype: TransformationType::Linear,
@@ -291,10 +292,16 @@ impl Pipeline {
     pub fn highlight_column(&self) -> &str{
         &self.parameters.highlight_column
     }
+    pub fn set_highlights(&mut self, new_highlights:BitVector){
+        if self.highlights != new_highlights{
+            self.highlights = new_highlights;
+            self.stage = Stage::Stage0NewData;
+        }
+    }
     pub fn set_highlight_column(&mut self, column:String){
         if self.parameters.highlight_column != column {
             self.parameters.highlight_column = column;
-            self.highlightable_values.clear();
+//            self.highlightable_values.clear();
             if self.parameters.highlight_column!=""{
                 let mut set = BTreeSet::new();
                 if self.point_data.aux.contains_key(&self.parameters.highlight_column){
@@ -315,9 +322,11 @@ impl Pipeline {
                         }
                     }
                 }
+                /*
                 for key in set.iter(){
                     self.highlightable_values.push(key.to_string());
                 }
+                */
             }
             self.stage = Stage::Stage0NewData;
         }
@@ -448,6 +457,7 @@ impl Pipeline {
     }
     pub fn extract_xyi(&mut self) {
         self.xyi.clear();
+        /*
         self.highlights.clear();
         if self.highlight_column()==""{
             for _i in 0..self.point_data.length{
@@ -471,10 +481,9 @@ impl Pipeline {
                 }    
             }
         }
+        */
         if self.highlights.len()!=self.point_data.length{
-            for _i in 0..self.point_data.length{
-                self.highlights.push(false);
-            }
+            self.highlights = BitVector::new(self.point_data.len()) | self.highlights.clone();
         }
       
         if self.point_data.data.contains_key(self.xcolumn()) && self.point_data.data.contains_key(self.ycolumn()){
@@ -487,7 +496,7 @@ impl Pipeline {
             for (i,(&x,&y)) in xdata.iter().zip(ydata.iter()).enumerate() {
                 if let (Some(xx), Some(yy)) = (self.tx.transform(x), self.ty.transform(y)){
                     let w:f64 = self.weights()[i];
-                    self.xyi.push((xx, 1.0-yy, w, i+1, self.highlights[i]));
+                    self.xyi.push((xx, 1.0-yy, w, i+1, self.highlights.contains(i)));
                 }
             }
         }
@@ -513,7 +522,7 @@ impl Pipeline {
                 if let (&Some(x), &Some(y)) = pair{
                     if let (Some(xx), Some(yy)) = (self.tx.transform(x), self.ty.transform(y)){
                         let w:f64 = self.weights()[i];
-                        self.xyi.push((xx, 1.0-yy, w, i+1, self.highlights[i]));
+                        self.xyi.push((xx, 1.0-yy, w, i+1, self.highlights.contains(i)));
                     }
                 }
             }
