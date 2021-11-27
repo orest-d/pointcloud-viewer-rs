@@ -19,7 +19,7 @@ use pipeline::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "pointcloud viewer".to_owned(),
+        window_title: "Pointcloud Viewer".to_owned(),
         fullscreen: false,
         window_resizable: true,
         window_width: 1200,
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     let size_x = pipeline.parameters.mesh_width as f32;
     let size_y = pipeline.parameters.mesh_height as f32;
     let mut statistics = None;
-    let mut enable_on_over = true;
+    let mut enable_data_display = true;
     let mut enable_statistics = false;
     let mut enable_column_selector = false;
     let mut column_selection = String::new();
@@ -67,26 +67,50 @@ async fn main() -> Result<()> {
                 pipeline.point_data.reset_headers();
             }
 
-            egui::Window::new("View setup")
+            egui::Window::new("Control")
                 .default_pos((2.0 * margin + size_x, margin))
                 .show(egui_ctx, |ui| {
                     //ui.label("Test");
 
+                    ui.horizontal(|ui| {
+                        if ui
+                            .add(egui::SelectableLabel::new(
+                                enable_column_selector,
+                                "Select columns",
+                            ))
+                            .clicked()
+                        {
+                            enable_column_selector = !enable_column_selector;
+                        };
+                        if ui
+                            .add(egui::SelectableLabel::new(enable_highlight, "Highlight"))
+                            .clicked()
+                        {
+                            enable_highlight = !enable_highlight;
+                        };
+                        if ui
+                            .add(egui::SelectableLabel::new(
+                                enable_data_display,
+                                "Data display",
+                            ))
+                            .clicked()
+                        {
+                            enable_data_display = !enable_data_display;
+                        };
+                        if ui
+                            .add(egui::SelectableLabel::new(enable_statistics, "Statistics"))
+                            .clicked()
+                        {
+                            enable_statistics = !enable_statistics;
+                            if enable_statistics && statistics.is_none() {
+                                statistics = Some(pipeline.statistics(-1.0, -1.0));
+                            }
+                        };
+                    });
+                    ui.separator();
                     egui::Grid::new("Coordinates grid").show(ui, |ui| {
                         if ui.button("Zoom all").clicked() {
                             pipeline.zoom_all();
-                        }
-                        if enable_column_selector {
-                            if ui.button("All columns").clicked() {
-                                enable_column_selector = !enable_column_selector;
-                            }
-                        } else {
-                            if ui.button("Select columns").clicked() {
-                                enable_column_selector = !enable_column_selector;
-                            }
-                        }
-                        if ui.button("Highlight").clicked() {
-                            enable_highlight = !enable_highlight;
                         }
                         ui.end_row();
                         let mut zoom = pipeline.get_zoom();
@@ -194,40 +218,19 @@ async fn main() -> Result<()> {
                         ui.add(egui::Slider::new(&mut contrast, 0.1..=10.0));
                         pipeline.set_contrast(contrast);
                         ui.end_row();
-
-                        ui.checkbox(&mut enable_statistics, "Enable statistics");
                     });
 
                     //                    dbg!(&ui.input().pointer.hover_pos());
                 });
-            egui::Window::new("Data under cursor").open(&mut enable_on_over)
+            egui::Window::new("Data display")
+                .open(&mut enable_data_display)
                 .default_pos((2.0 * margin + size_x, 390.0))
                 .show(egui_ctx, |ui| {
-//                    ui.label(format!("{:?}", ui.input().pointer.hover_pos()));
+                    //                    ui.label(format!("{:?}", ui.input().pointer.hover_pos()));
                     if let Some(origin) = ui.input().pointer.press_origin() {
                         mouse_origin = Some(origin);
                     }
 
-                    if ui.input().pointer.any_released() {
-                        if let (Some(origin), Some(release)) =
-                            (mouse_origin, ui.input().pointer.interact_pos())
-                        {
-                            //println!("Offset: {:?} {:?}", origin, release);
-                            let x1 = (origin.x - margin) / size_x;
-                            let y1 = (origin.y - margin) / size_y;
-                            let x2 = (release.x - margin) / size_x;
-                            let y2 = (release.y - margin) / size_y;
-                            if x1 >= 0.0 && x1 <= 1.0 && y1 >= 0.0 && y1 <= 1.0 {
-                                let dx = (x2 - x1) as f64;
-                                let dy = (y2 - y1) as f64;
-                                //println!("Shift {} {}",dx,dy);
-                                pipeline.relative_offset(dx, dy);
-                                if enable_statistics {
-                                    statistics = Some(pipeline.statistics(x2 as f64, y2 as f64));
-                                }
-                            }
-                        }
-                    }
                     if let Some(pos) = ui.input().pointer.hover_pos() {
                         if let Some(index) = pipeline
                             .mesh
@@ -249,17 +252,35 @@ async fn main() -> Result<()> {
                     }
                 });
 
-            if let Some(stat) = &statistics {
-                egui::Window::new("Statistics")
-                    .open(&mut enable_statistics)
-                    .default_pos((2.0 * margin + size_x, 380.0))
-                    .show(egui_ctx, |ui| {
-                        ScrollArea::both().show(ui, |ui| {
-                            egui::Grid::new("Statistics")
-                                .striped(true)
-                                .min_col_width(50.0)
-                                .max_col_width(200.0)
-                                .show(ui, |ui| {
+            egui::Window::new("Statistics")
+                .open(&mut enable_statistics)
+                .default_pos((2.0 * margin + size_x, 380.0))
+                .show(egui_ctx, |ui| {
+                    if ui.input().pointer.any_released() {
+                        if let (Some(origin), Some(release)) =
+                            (mouse_origin, ui.input().pointer.interact_pos())
+                        {
+                            //println!("Offset: {:?} {:?}", origin, release);
+                            let x1 = (origin.x - margin) / size_x;
+                            let y1 = (origin.y - margin) / size_y;
+                            let x2 = (release.x - margin) / size_x;
+                            let y2 = (release.y - margin) / size_y;
+                            if x1 >= 0.0 && x1 <= 1.0 && y1 >= 0.0 && y1 <= 1.0 {
+                                let dx = (x2 - x1) as f64;
+                                let dy = (y2 - y1) as f64;
+                                //println!("Shift {} {}",dx,dy);
+                                pipeline.relative_offset(dx, dy);
+                                statistics = Some(pipeline.statistics(x2 as f64, y2 as f64));
+                            }
+                        }
+                    }
+                    ScrollArea::both().show(ui, |ui| {
+                        egui::Grid::new("Statistics")
+                            .striped(true)
+                            .min_col_width(50.0)
+                            .max_col_width(200.0)
+                            .show(ui, |ui| {
+                                if let Some(stat) = &statistics{
                                     let tstat = stat.transpose();
                                     for row in tstat.iter() {
                                         for item in row.iter() {
@@ -267,11 +288,10 @@ async fn main() -> Result<()> {
                                         }
                                         ui.end_row();
                                     }
-                                });
-                        });
+                                }
+                            });
                     });
-            }
-
+                });
             egui::Window::new("Highlight Filter")
                 .open(&mut enable_highlight)
                 .default_pos((2.0 * margin + size_x, 320.0))
