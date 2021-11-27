@@ -46,7 +46,7 @@ impl NumericStatistics {
         v.push(format!("{}",self.count));
         let mut push = |x:Option<f64>|{
             if let Some(xx)=x{
-                v.push(format!("{}",xx));
+                v.push(format!("{:.3}",xx));
             }
             else{
                 v.push("".to_owned());
@@ -92,6 +92,38 @@ impl NumericStatistics {
         }
     }
 
+    pub fn add_weighted_selection(&mut self, x: &[f64], weight: &[f64], selection:impl Iterator<Item=usize>) {
+ //       for (xi, wi) in x.iter().zip(weight.iter()) {
+        for i in selection {
+            if i>=x.len() || i>=weight.len() {
+                continue;
+            }
+            let xi=x[i];
+            let wi=weight[i];
+            let wx = wi * xi;
+            let wx2 = wx * xi;
+            let wx3 = wx2 * xi;
+            let wx4 = wx3 * xi;
+            self.count+=1;
+
+            self.sum_of_values += wx;
+            self.sum_of_values2 += wx2;
+            self.sum_of_values3 += wx3;
+            self.sum_of_values4 += wx4;
+            self.sum_of_weights += wi;
+            self.minimum = if let Some(mx) = self.minimum {
+                Some(mx.min(xi))
+            } else {
+                Some(xi)
+            };
+            self.maximum = if let Some(mx) = self.maximum {
+                Some(mx.max(xi))
+            } else {
+                Some(xi)
+            };
+        }
+    }
+   
     pub fn add(&mut self, x: &[f64]) {
         for xi in x.iter() {
             let wx = xi;

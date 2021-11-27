@@ -4,6 +4,7 @@ extern crate serde_derive;
 use anyhow::Result;
 use egui::containers::ScrollArea;
 use macroquad::prelude::*;
+use std::collections::HashMap;
 mod column_filter;
 mod highlight;
 mod measures;
@@ -11,7 +12,6 @@ mod mesh;
 mod pipeline;
 mod pointdata;
 mod transform;
-
 use column_filter::*;
 use highlight::*;
 use mesh::HighlightType;
@@ -44,6 +44,18 @@ async fn main() -> Result<()> {
     let mut column_selection = String::new();
     let mut enable_highlight = false;
     let mut highlight_filter = CombinedHighlightFilter::new();
+    let mut stat_all = true;
+    let mut stat_highlighted = true;
+    let mut stat_non_highlighted = true;
+    let measure_names = measures::NumericStatistics::new().all_measure_names();
+    let mut enable_measure:HashMap<String, bool> = HashMap::new();
+    let mut selected_x=-1.0f64;
+    let mut selected_y=-1.0f64;
+
+    for measure in measure_names.iter() {
+        enable_measure.insert(measure.to_string(), measure=="Mean");
+    }
+
     loop {
         //        clear_background(DARKBLUE);
         clear_background(Color::from_rgba(0x12, 0x12, 0x12, 0xff));
@@ -103,7 +115,7 @@ async fn main() -> Result<()> {
                         {
                             enable_statistics = !enable_statistics;
                             if enable_statistics && statistics.is_none() {
-                                statistics = Some(pipeline.statistics(-1.0, -1.0));
+                                statistics = Some(pipeline.statistics(selected_x, selected_y));
                             }
                         };
                     });
@@ -270,24 +282,56 @@ async fn main() -> Result<()> {
                                 let dy = (y2 - y1) as f64;
                                 //println!("Shift {} {}",dx,dy);
                                 pipeline.relative_offset(dx, dy);
-                                statistics = Some(pipeline.statistics(x2 as f64, y2 as f64));
+                                selected_x = x2 as f64;
+                                selected_y = y2 as f64;
+                                statistics = Some(pipeline.statistics(selected_x, selected_y));
                             }
                         }
                     }
+
+                    let mut stat = Vec::new();
+                    if let Some(s) = &statistics {
+                        stat = s.clone();
+                    }
+                    egui::Grid::new("Statistics config").show(ui, |ui|{
+                        ui.checkbox(&mut stat_all, ALL);
+                        ui.checkbox(&mut stat_highlighted, HIGHLIGHTED);
+                        ui.checkbox(&mut stat_non_highlighted, NON_HIGHLIGHTED);
+                        ui.end_row();
+                        for (i,name) in measure_names.iter().enumerate() {
+                            let flag = enable_measure.entry(name.to_string()).or_insert(true);
+                            ui.checkbox(&mut *flag, name);
+                            if i%4==3{
+                                ui.end_row();
+                            }
+                            if !*flag{
+                                stat = stat.iter().filter(|x| &x[1]!=name).map(|x| x.to_owned()).collect();
+                            }
+                        }
+                    });
+                    if !stat_all{
+                        stat = stat.iter().filter(|x| x[0]!=ALL).map(|x| x.to_owned()).collect();
+                    }
+                    if !stat_highlighted{
+                        stat = stat.iter().filter(|x| x[0]!=HIGHLIGHTED).map(|x| x.to_owned()).collect();
+                    }
+                    if !stat_non_highlighted{
+                        stat = stat.iter().filter(|x| x[0]!=NON_HIGHLIGHTED).map(|x| x.to_owned()).collect();
+                    }
+                    
+
                     ScrollArea::both().show(ui, |ui| {
                         egui::Grid::new("Statistics")
                             .striped(true)
                             .min_col_width(50.0)
                             .max_col_width(200.0)
                             .show(ui, |ui| {
-                                if let Some(stat) = &statistics{
-                                    let tstat = stat.transpose();
-                                    for row in tstat.iter() {
-                                        for item in row.iter() {
-                                            ui.label(item);
-                                        }
-                                        ui.end_row();
+                                let tstat = stat.transpose();
+                                for row in tstat.iter() {
+                                    for item in row.iter() {
+                                        ui.label(item);
                                     }
+                                    ui.end_row();
                                 }
                             });
                     });
@@ -321,6 +365,7 @@ async fn main() -> Result<()> {
                             "Non-highlighted only",
                         );
                         pipeline.set_highlight_type(highlight_type);
+                        statistics = Some(pipeline.statistics(selected_x, selected_y));  
                     });
                 });
         });
