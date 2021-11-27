@@ -1,6 +1,6 @@
 [package]
 name = "pointcloud-viewer"
-version = "0.1.0"
+version = "0.3.0"
 authors = ["Orest Dubay <orest3.dubay@gmail.com>"]
 edition = "2018"
 

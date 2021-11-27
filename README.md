@@ -11,6 +11,7 @@ points can be smeared by a Gaussian function.
 
 See live [demo](https://orest-d.github.io/pointcloud-viewer-rs/).
 
+
 # Features
 
 * Display selected columns
@@ -20,10 +21,11 @@ See live [demo](https://orest-d.github.io/pointcloud-viewer-rs/).
 * Show the row of data under the mouse cursor
 * Optional Gaussian smearing
 * Optionally specify a weight for each point
-* Highlight a group of points based on a selected value in a specified column
+* Highlighting groups of points
 * Highlighting supports four different modes (depending what data are shown)
 * Columns can be searched/reduced (which comes handy in datasets with many columns)
-* Statistics calculator (experimental)
+* Statistics
+* Flexible filter for highlighting points and statistics
 * Pointcloud viewer can be compiled to webassembly and used on the web - either in connection to LiQuer framework or standalone. It as well can be compiled to a desktop application.
 
 
@@ -73,6 +75,10 @@ cargo build --release
 
 The application can be found in 'target/release' directory.
 Copy your data into 'data.csv' in the same directory as the executable before you start it.
+
+# News
+
+- 2021-11-27 - v0.3.0 - Flexible highlight filter and improved statistics, contrast and a nicer GUI
 
 # Credits
 
