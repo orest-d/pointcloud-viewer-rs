@@ -244,13 +244,13 @@ impl Transform for Uniform01ToNormal{
             None
         }
         else{
-            None
             //Some(statrs::function::erf::erf_inv(2.0*value -1.0)*(2.0.sqrt()))
+            Some(crate::erf::erf_inv(2.0*value -1.0)*(2.0.sqrt()))
         }
     }
     fn inverse(&self, value:f64)->Option<f64>{
         //Some(0.5*(1.0 + statrs::function::erf::erf(value/(2.0.sqrt()))))
-        None
+        Some(0.5*(1.0 + crate::erf::erf(value/(2.0.sqrt()))))
     }
 }
 

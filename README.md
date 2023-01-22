@@ -79,7 +79,7 @@ Copy your data into 'data.csv' in the same directory as the executable before yo
 # News
 
 - 2021-11-27 - v0.3.0 - Flexible highlight filter and improved statistics, contrast and a nicer GUI
-- 2023-01-22 - v0.4.0 - Axis labels and tool registration in liquer GUI (quantile normal transformation is disabled for now)
+- 2022-01-22 - v0.4.0 - Axis labels, quantile normal transformation and tool registration in liquer GUI
 
 # Credits
 
@@ -87,3 +87,4 @@ Copy your data into 'data.csv' in the same directory as the executable before yo
 * [Egui](https://github.com/emilk/egui) - fantastic GUI library, easy to use, very portable. I would not even start working on this project without egui...
 * [Macroquad](https://macroquad.rs/) - another great library that Pointcloud Viewer is based on.
 * [Egui-macroquad](https://github.com/optozorax/egui-macroquad) - egui bindings for macroquad.
+* [statrs](https://github.com/statrs-dev/statrs) - we have borrow the code from the *erf* functions in order to by able to complile to wasm. 

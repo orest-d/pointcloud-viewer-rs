@@ -12,10 +12,13 @@ mod mesh;
 mod pipeline;
 mod pointdata;
 mod transform;
+mod erf;
+mod evaluate;
 use column_filter::*;
 use highlight::*;
 use mesh::HighlightType;
 use pipeline::*;
+
 
 fn window_conf() -> Conf {
     Conf {
@@ -253,7 +256,8 @@ async fn main() -> Result<()> {
                         mouse_origin = Some(origin);
                     }
 
-                    if let Some(pos) = ui.input().pointer.hover_pos() {
+                    let posoption = ui.input().pointer.hover_pos().clone();
+                    if let Some(pos) = posoption {
                         if let Some(index) = pipeline
                             .mesh
                             .get_index_wide((pos.x - margin) as usize, (pos.y - margin) as usize)
