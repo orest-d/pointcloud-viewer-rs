@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use cgmath::num_traits::Float;
+
 pub trait Transform{
     fn calibrate(&mut self, values:&[f64]);
     fn transform(&self, value:f64)->Option<f64>;
@@ -178,7 +180,7 @@ impl Quantile{
 }
 
 impl NewTransform for Quantile{
-    fn new() -> Self{Quantile::with_size(100)}
+    fn new() -> Self{Quantile::with_size(500)}
 }
 
 impl Transform for Quantile{
@@ -221,6 +223,40 @@ impl Transform for Quantile{
         */
     }
 }
+
+pub struct Uniform01ToNormal;
+
+impl Uniform01ToNormal{
+}
+
+impl NewTransform for Uniform01ToNormal{
+    fn new() -> Self{Self}
+}
+
+impl Transform for Uniform01ToNormal{
+    fn calibrate(&mut self, _values:&[f64]){
+    }
+    fn transform(&self, value:f64)->Option<f64>{
+        if value<=0.0{
+            None
+        }
+        else if value>=1.0{
+            None
+        }
+        else{
+            None
+            //Some(statrs::function::erf::erf_inv(2.0*value -1.0)*(2.0.sqrt()))
+        }
+    }
+    fn inverse(&self, value:f64)->Option<f64>{
+        //Some(0.5*(1.0 + statrs::function::erf::erf(value/(2.0.sqrt()))))
+        None
+    }
+}
+
+pub type QuantileNormal = ComposedTransform<ComposedTransform<Quantile, Uniform01ToNormal>, Normalize>;
+
+
 #[cfg(test)]
 mod test{
     use super::*;

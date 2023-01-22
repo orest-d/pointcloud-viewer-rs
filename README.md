@@ -15,7 +15,7 @@ See live [demo](https://orest-d.github.io/pointcloud-viewer-rs/).
 # Features
 
 * Display selected columns
-* Data in the selected columns can be transformed to a different scale: linear, logarithmic or quantile.
+* Data in the selected columns can be transformed to a different scale: linear, logarithmic, quantile (uniform) or quantile normal.
 * Display the point density via a color gradient with tunable brightness
 * Zoom, move, change aspect ratio
 * Show the row of data under the mouse cursor
@@ -79,6 +79,7 @@ Copy your data into 'data.csv' in the same directory as the executable before yo
 # News
 
 - 2021-11-27 - v0.3.0 - Flexible highlight filter and improved statistics, contrast and a nicer GUI
+- 2023-01-22 - v0.4.0 - Axis labels and tool registration in liquer GUI (quantile normal transformation is disabled for now)
 
 # Credits
 

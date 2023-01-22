@@ -161,6 +161,11 @@ async fn main() -> Result<()> {
                                     TransformationType::Quantile,
                                     "Quantile",
                                 );
+                                ui.selectable_value(
+                                    &mut txtype,
+                                    TransformationType::QuantileNormal,
+                                    "Quantile Normal",
+                                );
                                 pipeline.set_txtype(txtype);
                             });
                         ui.end_row();
@@ -191,6 +196,11 @@ async fn main() -> Result<()> {
                                     &mut tytype,
                                     TransformationType::Quantile,
                                     "Quantile",
+                                );
+                                ui.selectable_value(
+                                    &mut tytype,
+                                    TransformationType::QuantileNormal,
+                                    "Quantile Normal",
                                 );
                                 pipeline.set_tytype(tytype);
                             });
@@ -377,6 +387,8 @@ async fn main() -> Result<()> {
                 margin,
                 Color::from_rgba(255, 255, 255, 255),
             );
+            draw_text(pipeline.xcolumn(),2.0*margin + texture.width()/2.0, texture.height()+24.0, 24.0, Color::from_rgba(255, 255, 255, 255));
+            draw_text(pipeline.ycolumn(),2.0*margin, 2.0*margin+24.0, 24.0, Color::from_rgba(255, 255, 255, 255));
         }
         egui_macroquad::draw();
         // Draw things after egui

@@ -109,6 +109,7 @@ pub enum TransformationType {
     Linear,
     Logarithmic,
     Quantile,
+    QuantileNormal,
 }
 
 impl TransformationType {
@@ -117,6 +118,7 @@ impl TransformationType {
             TransformationType::Linear => Box::new(Normalize::new()),
             TransformationType::Logarithmic => Box::new(NormalizedLogarithmic::new()),
             TransformationType::Quantile => Box::new(Quantile::new()),
+            TransformationType::QuantileNormal => Box::new(QuantileNormal::new()),
         }
     }
     pub fn text(&self) -> &str {
@@ -124,6 +126,7 @@ impl TransformationType {
             TransformationType::Linear => "Linear",
             TransformationType::Logarithmic => "Logarithmic",
             TransformationType::Quantile => "Quantile",
+            TransformationType::QuantileNormal => "Quantile Normal",
         }
     }
 }
